@@ -1,0 +1,26 @@
+{
+  "name": "choo-app-start",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "browserify": "^17.0.0",
+    "choo": "^7.1.0",
+    "choo-devtools": "^3.0.4",
+    "http-server": "^13.0.1",
+    "nanocomponent": "^6.6.0",
+    "nanohtml": "^1.9.1",
+    "nanostate": "^1.2.1",
+    "sheetify": "^8.0.0",
+    "watchify": "^4.0.0"
+  },
+  "scripts": {
+    "start": "http-server -o -c-1 -p 8080 --proxy http://localhost:8080?",
+    "server": "node server.js",
+    "build": "watchify -v -g sheetify index.js -o bundle.js",
+    "browser": "npm run build && npm run start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
