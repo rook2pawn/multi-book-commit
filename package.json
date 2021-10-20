@@ -15,10 +15,8 @@
     "watchify": "^4.0.0"
   },
   "scripts": {
-    "start": "http-server -o -c-1 -p 8080 --proxy http://localhost:8080?",
-    "server": "node server.js",
-    "build": "watchify -v -g sheetify index.js -o bundle.js",
-    "browser": "npm run build && npm run start"
+    "start": "http-server ./web -o -c-1 -p 8080 --proxy http://localhost:8080?",
+    "build": "watchify -v -g sheetify app/index.js -o web/bundle.js"
   },
   "keywords": [],
   "author": "",

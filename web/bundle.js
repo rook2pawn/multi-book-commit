@@ -6,247 +6,30 @@ const devtools = require("choo-devtools");
 const css = 0;
 ;((require('sheetify/insert')(".column {\n  display: flex;\n  flex-direction: column;\n  width: 800px;\n}") || true) && "_0e28dbe9");
 
-const { postData } = require("./lib");
-const Lobby = require("./components/lobby");
-const Modal = require("./components/modal");
-const { Server } = require("ws");
-
 module.exports = () => {
-  const ws = new WebSocket(`ws://${window.location.hostname}:5000`);
-
   const app = choo();
-  const lobby = new Lobby();
-  const modal = new Modal();
 
   app.use(devtools());
   app.use((state) => {
     state.logger = false;
   });
-  function lobbyView(state, emit) {
+  function mainView(state, emit) {
     return html`<body>
-      <div>
-        ${state.showModal === true ? modal.render({ state, emit }) : ""}
-        ${lobby.render({ state, emit })}
-        ${state.lobbies.map((lobby) => {
-          return html`<div>${lobby.id}</div>`;
-        })}
-      </div>
+      <div></div>
     </body>`;
   }
-  app.route("/", lobbyView);
-  app.use((state, emitter) => {
-    ws.onopen = function open() {
-      //ws.send("something");
-    };
-
-    ws.onmessage = function incoming(message) {
-      console.log("message:", message);
-      const data = JSON.parse(message.data);
-      const { action, payload } = data;
-      emitter.emit(action, payload);
-    };
-
-    state.lobbies = [];
-    emitter.on("server:lobbylist", ({ lobbies }) => {
-      console.log("lobbies:", lobbies);
-      state.lobbies = lobbies;
-      emitter.emit("render");
-    });
-  });
-  app.use((state, emitter) => {
-    state.modal = { state: "", showModal: false };
-    emitter.on("showModal", () => {});
-  });
-  app.use((state, emitter) => {
-    state.name = "";
-  });
-  app.use((state, emitter) => {
-    emitter.on("lobby:create", ({ name }) => {
-      state.name = name;
-      postData({ path: "/create", data: { name } })
-        .then((resp) => {
-          console.log("got resp:", resp);
-        })
-        .catch((e) => {
-          console.log("caught:", e);
-        });
-    });
-
-    emitter.on("lobby:join", ({ name }) => {
-      postData({ path: "/join", data: { name } })
-        .then((resp) => {
-          console.log("got resp:", resp);
-        })
-        .catch((e) => {
-          console.log("caught:", e);
-        });
-    });
-  });
+  app.route("/", mainView);
+  app.use((state, emitter) => {});
   app.mount("body");
 };
 
-},{"./components/lobby":2,"./components/modal":3,"./lib":5,"choo":24,"choo-devtools":13,"nanohtml":44,"sheetify/insert":69,"ws":74}],2:[function(require,module,exports){
-const Nanocomponent = require("nanocomponent");
-const html = require("choo/html");
-const css = 0;
-const nanostate = require("nanostate");
-
-;((require('sheetify/insert')("") || true) && "_d41d8cd9");
-
-class Component extends Nanocomponent {
-  constructor() {
-    super();
-    this._loadedResolve;
-    this.loaded = new Promise((resolve, reject) => {
-      this._loadedResolve = resolve;
-    });
-    this.name = "";
-  }
-
-  createElement({ state, emit, name = "" }) {
-    this.name = name || state.name;
-    return html`<div class="">
-      <h1>Lobby</h1>
-      <div>
-        <h4>Instructions</h4>
-        <ol>
-          <li>Enter your name</li>
-          <li>Create a public game lobby</li>
-          <li>or Join an existing game lobby</li>
-          <li>Have fun</li>
-        </ol>
-      </div>
-      <div>
-        <input
-          type="text"
-          size="60"
-          placeholder="enter name here (4 characters min)"
-          value="${this.name}"
-          oninput=${(e) => {
-            this.name = e.target.value.trim();
-            this.render({ state, emit, name: this.name });
-          }}
-        />
-      </div>
-
-      <div>
-        <input
-          type="button"
-          value="Create a public game lobby"
-          disabled=${!(this.name.length >= 4)}
-          onclick=${() => {
-            emit("lobby:create", { name });
-          }}
-        />
-      </div>
-      <div>
-        <input
-          type="button"
-          value="Join a public game lobby"
-          onclick=${() => {
-            emit("lobby:join", { name });
-          }}
-          disabled=${!(this.name.length >= 4)}
-        />
-      </div>
-    </div>`;
-  }
-
-  load(el) {
-    this.el = el;
-    this._loadedResolve();
-  }
-
-  update() {
-    return true;
-  }
-}
-
-module.exports = exports = Component;
-
-},{"choo/html":23,"nanocomponent":39,"nanostate":57,"sheetify/insert":69}],3:[function(require,module,exports){
-const Nanocomponent = require("nanocomponent");
-const html = require("choo/html");
-const css = 0;
-const nanostate = require("nanostate");
-
-;((require('sheetify/insert')(".promoLine {\n  display: flex;\n  justify-content: space-between;\n}\n.promoLine .item {\n  cursor: pointer;\n  border: 1px solid transparent;\n  box-sizing: border-box;\n}\n.promoLine .item:hover {\n  border: thin solid white;\n}\n.promoLine .item.selected {\n  border: thin solid green;\n}\n.modalTitle {\n  color: white;\n  font-family: Verdana, Geneva, Tahoma, sans-serif;\n  font-size: 14px;\n}\n.modalAccept {\n  background-color: #3692e7;\n  color: white;\n  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;\n  align-self: center;\n  margin-top: 20px;\n  cursor: pointer;\n  font-size: 16px;\n  font-weight: bold;\n  padding: 20px;\n}\n\n.modalBody {\n  display: flex;\n  flex-direction: column;\n  color: white;\n  font-family: Verdana, Geneva, Tahoma, sans-serif;\n  font-size: 18px;\n  text-align: center;\n}\n.modal {\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 35px;\n  background-color: #444;\n  padding: 1em;\n  color: black;\n  font-size: 32px;\n  z-index: 1010;\n  position: fixed;\n  top: 50%;\n  left: 50%;\n  min-width: 400px;\n  transform: translate(-50%, -50%);\n}\n\n.modal-overlay {\n  /* recommendation:\n     don't focus on the number \"1000\" here, but rather,\n     you should have a documented system for z-index and \n     follow that system. This number should be pretty\n     high on the scale in that system.\n  */\n  z-index: 1000;\n  background-color: black;\n  opacity: 0.35;\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n}") || true) && "_8f72e216");
-
-class Component extends Nanocomponent {
-  constructor() {
-    super();
-    this._loadedResolve;
-    this.loaded = new Promise((resolve, reject) => {
-      this._loadedResolve = resolve;
-    });
-    this.selected = "";
-  }
-
-  deliverTitle({ state }) {
-    switch (state.modalState) {
-      default:
-        return "";
-        break;
-    }
-  }
-
-  deliverBody({ state, emit }) {
-    switch (state.modalState) {
-      default:
-        break;
-    }
-  }
-
-  deliverFooter({ state, emit }) {
-    switch (state.modalState) {
-      default:
-        return html` <div
-          class="modalAccept"
-          onclick=${() => {
-            //emit("modal:confirm", { selected: this.selected, contentType });
-          }}
-        >
-          Confirm
-        </div>`;
-
-        break;
-    }
-  }
-  createElement({ state, emit }) {
-    return html`<div>
-      <div class="modal">
-        <div class="modalTitle">${this.deliverTitle({ state })}</div>
-        <div class="modalBody">${this.deliverBody({ state, emit })}</div>
-        <div>${this.deliverFooter({ state, emit })}</div>
-      </div>
-      <div
-        class="modal-overlay"
-        onclick=${() => {
-          emit("modal:dismiss", { modalState: state.modalState });
-        }}
-      ></div>
-    </div>`;
-  }
-
-  load(el) {
-    this.el = el;
-    this._loadedResolve();
-  }
-
-  update() {
-    return true;
-  }
-}
-
-module.exports = exports = Component;
-
-},{"choo/html":23,"nanocomponent":39,"nanostate":57,"sheetify/insert":69}],4:[function(require,module,exports){
+},{"choo":20,"choo-devtools":10,"nanohtml":36,"sheetify/insert":58}],2:[function(require,module,exports){
 const lib = require("./lib");
 const app = require("./app");
 
 lib.DOMContentLoadedPromise.then(app);
 
-},{"./app":1,"./lib":5}],5:[function(require,module,exports){
+},{"./app":1,"./lib":3}],3:[function(require,module,exports){
 exports.DOMContentLoadedPromise = new Promise((resolve, reject) => {
   document.addEventListener(
     "DOMContentLoaded",
@@ -257,33 +40,7 @@ exports.DOMContentLoadedPromise = new Promise((resolve, reject) => {
   );
 });
 
-async function postData({ path = "/", data = {} }) {
-  // Default options are marked with *
-  let url = "http://127.0.0.1:5150";
-  url = url.concat(path);
-  console.log("URL:", url);
-
-  /*
-  mode: "cors", // no-cors, *cors, same-origin
-  cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-  credentials: "same-origin", // include, *same-origin, omit
-  redirect: "follow", // manual, *follow, error
-  referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-*/
-  const response = await fetch(url, {
-    method: "POST", // *GET, POST, PUT, DELETE, etc.
-    mode: "cors", // no-cors, *cors, same-origin
-    headers: {
-      "Content-Type": "application/json",
-      // 'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: JSON.stringify(data), // body data type must match "Content-Type" header
-  });
-  return response.json(); // parses JSON response into native JavaScript objects
-}
-exports.postData = postData;
-
-},{}],6:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -793,7 +550,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":60,"util/":9}],7:[function(require,module,exports){
+},{"object-assign":50,"util/":7}],5:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -818,14 +575,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],8:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],9:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -1415,7 +1172,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":8,"_process":66,"inherits":7}],10:[function(require,module,exports){
+},{"./support/isBuffer":6,"_process":55,"inherits":5}],8:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -1567,9 +1324,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],11:[function(require,module,exports){
-
-},{}],12:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -3350,7 +3105,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":10,"buffer":12,"ieee754":34}],13:[function(require,module,exports){
+},{"base64-js":8,"buffer":9,"ieee754":28}],10:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 
 var storage = require('./lib/storage')
@@ -3402,7 +3157,7 @@ function expose (opts) {
   }
 }
 
-},{"./lib/copy":14,"./lib/debug":15,"./lib/help":16,"./lib/log":17,"./lib/logger":18,"./lib/perf":19,"./lib/storage":20,"events":28,"wayfarer/get-all-routes":71}],14:[function(require,module,exports){
+},{"./lib/copy":11,"./lib/debug":12,"./lib/help":13,"./lib/log":14,"./lib/logger":15,"./lib/perf":16,"./lib/storage":17,"events":24,"wayfarer/get-all-routes":60}],11:[function(require,module,exports){
 var stateCopy = require('state-copy')
 var pluck = require('plucker')
 
@@ -3418,7 +3173,7 @@ function copy (state) {
   stateCopy(isStateString ? pluck.apply(this, arguments) : state)
 }
 
-},{"plucker":64,"state-copy":70}],15:[function(require,module,exports){
+},{"plucker":53,"state-copy":59}],12:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var onChange = require('object-change-callsite')
 var nanologger = require('nanologger')
@@ -3460,7 +3215,7 @@ function debug (state, emitter, app, localEmitter) {
   })
 }
 
-},{"assert":6,"nanologger":48,"object-change-callsite":61}],16:[function(require,module,exports){
+},{"assert":4,"nanologger":40,"object-change-callsite":51}],13:[function(require,module,exports){
 module.exports = help
 
 function help () {
@@ -3493,7 +3248,7 @@ function print (cmd, desc) {
 
 function noop () {}
 
-},{}],17:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var removeItems = require('remove-array-items')
 var scheduler = require('nanoscheduler')()
 var nanologger = require('nanologger')
@@ -3571,7 +3326,7 @@ function log (state, emitter, app, localEmitter) {
 
 function noop () {}
 
-},{"clone":26,"nanologger":48,"nanoscheduler":56,"remove-array-items":67}],18:[function(require,module,exports){
+},{"clone":22,"nanologger":40,"nanoscheduler":48,"remove-array-items":56}],15:[function(require,module,exports){
 var scheduler = require('nanoscheduler')()
 var nanologger = require('nanologger')
 var Hooks = require('choo-hooks')
@@ -3656,7 +3411,7 @@ function logger (state, emitter, opts) {
   }
 }
 
-},{"choo-hooks":21,"nanologger":48,"nanoscheduler":56}],19:[function(require,module,exports){
+},{"choo-hooks":18,"nanologger":40,"nanoscheduler":48}],16:[function(require,module,exports){
 var onPerformance = require('on-performance')
 
 var BAR = '█'
@@ -3797,7 +3552,7 @@ function getMedian (args) {
 // Do nothing.
 function noop () {}
 
-},{"on-performance":63}],20:[function(require,module,exports){
+},{"on-performance":52}],17:[function(require,module,exports){
 var pretty = require('prettier-bytes')
 
 module.exports = storage
@@ -3840,7 +3595,7 @@ function fmt (num) {
 
 function noop () {}
 
-},{"prettier-bytes":65}],21:[function(require,module,exports){
+},{"prettier-bytes":54}],18:[function(require,module,exports){
 var onPerformance = require('on-performance')
 var scheduler = require('nanoscheduler')()
 var assert = require('assert')
@@ -3969,7 +3724,7 @@ ChooHooks.prototype._emitLoaded = function () {
   })
 }
 
-},{"assert":6,"nanoscheduler":56,"on-performance":63}],22:[function(require,module,exports){
+},{"assert":4,"nanoscheduler":48,"on-performance":52}],19:[function(require,module,exports){
 var assert = require('assert')
 var LRU = require('nanolru')
 
@@ -4012,10 +3767,7 @@ function newCall (Cls) {
   return new (Cls.bind.apply(Cls, arguments)) // eslint-disable-line
 }
 
-},{"assert":36,"nanolru":49}],23:[function(require,module,exports){
-module.exports = require('nanohtml')
-
-},{"nanohtml":44}],24:[function(require,module,exports){
+},{"assert":30,"nanolru":41}],20:[function(require,module,exports){
 var scrollToAnchor = require('scroll-to-anchor')
 var documentReady = require('document-ready')
 var nanotiming = require('nanotiming')
@@ -4299,7 +4051,7 @@ Choo.prototype._setCache = function (state) {
   }
 }
 
-},{"./component/cache":22,"assert":36,"document-ready":27,"nanobus":37,"nanohref":41,"nanomorph":50,"nanoquery":53,"nanoraf":54,"nanorouter":55,"nanotiming":59,"scroll-to-anchor":68}],25:[function(require,module,exports){
+},{"./component/cache":19,"assert":30,"document-ready":23,"nanobus":31,"nanohref":33,"nanomorph":42,"nanoquery":45,"nanoraf":46,"nanorouter":47,"nanotiming":49,"scroll-to-anchor":57}],21:[function(require,module,exports){
 /*! clipboard-copy. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* global DOMException */
 
@@ -4352,7 +4104,7 @@ function clipboardCopy (text) {
     : Promise.reject(new DOMException('The request is not allowed', 'NotAllowedError'))
 }
 
-},{}],26:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 (function (Buffer){(function (){
 var clone = (function() {
 'use strict';
@@ -4613,7 +4365,7 @@ if (typeof module === 'object' && module.exports) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":12}],27:[function(require,module,exports){
+},{"buffer":9}],23:[function(require,module,exports){
 'use strict'
 
 module.exports = ready
@@ -4632,7 +4384,7 @@ function ready (callback) {
   })
 }
 
-},{}],28:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -5131,18 +4883,32 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
   }
 }
 
-},{}],29:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 module.exports = stringify
 stringify.default = stringify
 stringify.stable = deterministicStringify
 stringify.stableStringify = deterministicStringify
 
+var LIMIT_REPLACE_NODE = '[...]'
+var CIRCULAR_REPLACE_NODE = '[Circular]'
+
 var arr = []
 var replacerStack = []
 
+function defaultOptions () {
+  return {
+    depthLimit: Number.MAX_SAFE_INTEGER,
+    edgesLimit: Number.MAX_SAFE_INTEGER
+  }
+}
+
 // Regular stringify
-function stringify (obj, replacer, spacer) {
-  decirc(obj, '', [], undefined)
+function stringify (obj, replacer, spacer, options) {
+  if (typeof options === 'undefined') {
+    options = defaultOptions()
+  }
+
+  decirc(obj, '', 0, [], undefined, 0, options)
   var res
   try {
     if (replacerStack.length === 0) {
@@ -5164,37 +4930,60 @@ function stringify (obj, replacer, spacer) {
   }
   return res
 }
-function decirc (val, k, stack, parent) {
+
+function setReplace (replace, val, k, parent) {
+  var propertyDescriptor = Object.getOwnPropertyDescriptor(parent, k)
+  if (propertyDescriptor.get !== undefined) {
+    if (propertyDescriptor.configurable) {
+      Object.defineProperty(parent, k, { value: replace })
+      arr.push([parent, k, val, propertyDescriptor])
+    } else {
+      replacerStack.push([val, k, replace])
+    }
+  } else {
+    parent[k] = replace
+    arr.push([parent, k, val])
+  }
+}
+
+function decirc (val, k, edgeIndex, stack, parent, depth, options) {
+  depth += 1
   var i
   if (typeof val === 'object' && val !== null) {
     for (i = 0; i < stack.length; i++) {
       if (stack[i] === val) {
-        var propertyDescriptor = Object.getOwnPropertyDescriptor(parent, k)
-        if (propertyDescriptor.get !== undefined) {
-          if (propertyDescriptor.configurable) {
-            Object.defineProperty(parent, k, { value: '[Circular]' })
-            arr.push([parent, k, val, propertyDescriptor])
-          } else {
-            replacerStack.push([val, k])
-          }
-        } else {
-          parent[k] = '[Circular]'
-          arr.push([parent, k, val])
-        }
+        setReplace(CIRCULAR_REPLACE_NODE, val, k, parent)
         return
       }
     }
+
+    if (
+      typeof options.depthLimit !== 'undefined' &&
+      depth > options.depthLimit
+    ) {
+      setReplace(LIMIT_REPLACE_NODE, val, k, parent)
+      return
+    }
+
+    if (
+      typeof options.edgesLimit !== 'undefined' &&
+      edgeIndex + 1 > options.edgesLimit
+    ) {
+      setReplace(LIMIT_REPLACE_NODE, val, k, parent)
+      return
+    }
+
     stack.push(val)
     // Optimize for Arrays. Big arrays could kill the performance otherwise!
     if (Array.isArray(val)) {
       for (i = 0; i < val.length; i++) {
-        decirc(val[i], i, stack, val)
+        decirc(val[i], i, i, stack, val, depth, options)
       }
     } else {
       var keys = Object.keys(val)
       for (i = 0; i < keys.length; i++) {
         var key = keys[i]
-        decirc(val[key], key, stack, val)
+        decirc(val[key], key, i, stack, val, depth, options)
       }
     }
     stack.pop()
@@ -5212,8 +5001,12 @@ function compareFunction (a, b) {
   return 0
 }
 
-function deterministicStringify (obj, replacer, spacer) {
-  var tmp = deterministicDecirc(obj, '', [], undefined) || obj
+function deterministicStringify (obj, replacer, spacer, options) {
+  if (typeof options === 'undefined') {
+    options = defaultOptions()
+  }
+
+  var tmp = deterministicDecirc(obj, '', 0, [], undefined, 0, options) || obj
   var res
   try {
     if (replacerStack.length === 0) {
@@ -5237,23 +5030,13 @@ function deterministicStringify (obj, replacer, spacer) {
   return res
 }
 
-function deterministicDecirc (val, k, stack, parent) {
+function deterministicDecirc (val, k, edgeIndex, stack, parent, depth, options) {
+  depth += 1
   var i
   if (typeof val === 'object' && val !== null) {
     for (i = 0; i < stack.length; i++) {
       if (stack[i] === val) {
-        var propertyDescriptor = Object.getOwnPropertyDescriptor(parent, k)
-        if (propertyDescriptor.get !== undefined) {
-          if (propertyDescriptor.configurable) {
-            Object.defineProperty(parent, k, { value: '[Circular]' })
-            arr.push([parent, k, val, propertyDescriptor])
-          } else {
-            replacerStack.push([val, k])
-          }
-        } else {
-          parent[k] = '[Circular]'
-          arr.push([parent, k, val])
-        }
+        setReplace(CIRCULAR_REPLACE_NODE, val, k, parent)
         return
       }
     }
@@ -5264,11 +5047,28 @@ function deterministicDecirc (val, k, stack, parent) {
     } catch (_) {
       return
     }
+
+    if (
+      typeof options.depthLimit !== 'undefined' &&
+      depth > options.depthLimit
+    ) {
+      setReplace(LIMIT_REPLACE_NODE, val, k, parent)
+      return
+    }
+
+    if (
+      typeof options.edgesLimit !== 'undefined' &&
+      edgeIndex + 1 > options.edgesLimit
+    ) {
+      setReplace(LIMIT_REPLACE_NODE, val, k, parent)
+      return
+    }
+
     stack.push(val)
     // Optimize for Arrays. Big arrays could kill the performance otherwise!
     if (Array.isArray(val)) {
       for (i = 0; i < val.length; i++) {
-        deterministicDecirc(val[i], i, stack, val)
+        deterministicDecirc(val[i], i, i, stack, val, depth, options)
       }
     } else {
       // Create a temporary object in the required way
@@ -5276,10 +5076,10 @@ function deterministicDecirc (val, k, stack, parent) {
       var keys = Object.keys(val).sort(compareFunction)
       for (i = 0; i < keys.length; i++) {
         var key = keys[i]
-        deterministicDecirc(val[key], key, stack, val)
+        deterministicDecirc(val[key], key, i, stack, val, depth, options)
         tmp[key] = val[key]
       }
-      if (parent !== undefined) {
+      if (typeof parent !== 'undefined') {
         arr.push([parent, k, val])
         parent[k] = tmp
       } else {
@@ -5291,15 +5091,20 @@ function deterministicDecirc (val, k, stack, parent) {
 }
 
 // wraps replacer function to handle values we couldn't replace
-// and mark them as [Circular]
+// and mark them as replaced value
 function replaceGetterValues (replacer) {
-  replacer = replacer !== undefined ? replacer : function (k, v) { return v }
+  replacer =
+    typeof replacer !== 'undefined'
+      ? replacer
+      : function (k, v) {
+        return v
+      }
   return function (key, val) {
     if (replacerStack.length > 0) {
       for (var i = 0; i < replacerStack.length; i++) {
         var part = replacerStack[i]
         if (part[1] === key && part[0] === val) {
-          val = '[Circular]'
+          val = part[2]
           replacerStack.splice(i, 1)
           break
         }
@@ -5309,45 +5114,7 @@ function replaceGetterValues (replacer) {
   }
 }
 
-},{}],30:[function(require,module,exports){
-(function (global){(function (){
-var topLevel = typeof global !== 'undefined' ? global :
-    typeof window !== 'undefined' ? window : {}
-var minDoc = require('min-document');
-
-var doccy;
-
-if (typeof document !== 'undefined') {
-    doccy = document;
-} else {
-    doccy = topLevel['__GLOBAL_DOCUMENT_CACHE@4'];
-
-    if (!doccy) {
-        doccy = topLevel['__GLOBAL_DOCUMENT_CACHE@4'] = minDoc;
-    }
-}
-
-module.exports = doccy;
-
-}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"min-document":11}],31:[function(require,module,exports){
-(function (global){(function (){
-var win;
-
-if (typeof window !== "undefined") {
-    win = window;
-} else if (typeof global !== "undefined") {
-    win = global;
-} else if (typeof self !== "undefined"){
-    win = self;
-} else {
-    win = {};
-}
-
-module.exports = win;
-
-}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],32:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -5368,7 +5135,7 @@ function attributeToProperty (h) {
   }
 }
 
-},{}],33:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var attrToProp = require('hyperscript-attribute-to-property')
 
 var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
@@ -5665,7 +5432,7 @@ var closeRE = RegExp('^(' + [
 ].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
 function selfClosing (tag) { return closeRE.test(tag) }
 
-},{"hyperscript-attribute-to-property":32}],34:[function(require,module,exports){
+},{"hyperscript-attribute-to-property":26}],28:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -5752,7 +5519,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],35:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 var containers = []; // will store container HTMLElement references
 var styleElements = []; // will store {prepend: HTMLElement, append: HTMLElement}
 
@@ -5812,7 +5579,7 @@ function createStyleElement() {
 module.exports = insertCss;
 module.exports.insertCss = insertCss;
 
-},{}],36:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 assert.notEqual = notEqual
 assert.notOk = notOk
 assert.equal = equal
@@ -5836,7 +5603,7 @@ function assert (t, m) {
   if (!t) throw new Error(m || 'AssertionError')
 }
 
-},{}],37:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 var splice = require('remove-array-items')
 var nanotiming = require('nanotiming')
 var assert = require('assert')
@@ -6000,7 +5767,7 @@ Nanobus.prototype._emit = function (arr, eventName, data, uuid) {
   }
 }
 
-},{"assert":36,"nanotiming":59,"remove-array-items":38}],38:[function(require,module,exports){
+},{"assert":30,"nanotiming":49,"remove-array-items":32}],32:[function(require,module,exports){
 'use strict'
 
 /**
@@ -6029,187 +5796,7 @@ module.exports = function removeItems (arr, startIdx, removeCount) {
   arr.length = len
 }
 
-},{}],39:[function(require,module,exports){
-const document = require('global/document')
-const nanotiming = require('nanotiming')
-const morph = require('nanomorph')
-const onload = require('on-load')
-const assert = require('assert')
-
-const OL_KEY_ID = onload.KEY_ID
-const OL_ATTR_ID = onload.KEY_ATTR
-
-module.exports = Nanocomponent
-
-function makeID () {
-  return 'ncid-' + Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
-}
-
-Nanocomponent.makeID = makeID
-
-function Nanocomponent (name) {
-  this._hasWindow = typeof window !== 'undefined'
-  this._id = null // represents the id of the root node
-  this._ncID = null // internal nanocomponent id
-  this._olID = null
-  this._proxy = null
-  this._loaded = false // Used to debounce on-load when child-reordering
-  this._rootNodeName = null
-  this._name = name || 'nanocomponent'
-  this._rerender = false
-
-  this._handleLoad = this._handleLoad.bind(this)
-  this._handleUnload = this._handleUnload.bind(this)
-
-  this._arguments = []
-
-  const self = this
-
-  Object.defineProperty(this, 'element', {
-    get: function () {
-      const el = document.getElementById(self._id)
-      if (el) return el.dataset.nanocomponent === self._ncID ? el : undefined
-    }
-  })
-}
-
-Nanocomponent.prototype.render = function () {
-  const renderTiming = nanotiming(this._name + '.render')
-  const self = this
-  const args = new Array(arguments.length)
-  let el
-
-  for (let i = 0; i < arguments.length; i++) args[i] = arguments[i]
-  if (!this._hasWindow) {
-    const createTiming = nanotiming(this._name + '.create')
-    el = this.createElement.apply(this, args)
-    createTiming()
-    renderTiming()
-    return el
-  } else if (this.element) {
-    el = this.element // retain reference, as the ID might change on render
-    const updateTiming = nanotiming(this._name + '.update')
-    const shouldUpdate = this._rerender || this.update.apply(this, args)
-    updateTiming()
-    if (this._rerender) this._rerender = false
-    if (shouldUpdate) {
-      const desiredHtml = this._handleRender(args)
-      const morphTiming = nanotiming(this._name + '.morph')
-      morph(el, desiredHtml)
-      morphTiming()
-      if (this.afterupdate) this.afterupdate(el)
-    }
-    if (!this._proxy) { this._proxy = this._createProxy() }
-    renderTiming()
-    return this._proxy
-  } else {
-    this._reset()
-    el = this._handleRender(args)
-    if (this.beforerender) this.beforerender(el)
-    if (this.load || this.unload || this.afterreorder) {
-      onload(el, self._handleLoad, self._handleUnload, self._ncID)
-      this._olID = el.dataset[OL_KEY_ID]
-    }
-    renderTiming()
-    return el
-  }
-}
-
-Nanocomponent.prototype.rerender = function () {
-  assert(this.element, 'nanocomponent: cant rerender on an unmounted dom node')
-  this._rerender = true
-  this.render.apply(this, this._arguments)
-}
-
-Nanocomponent.prototype._handleRender = function (args) {
-  const createElementTiming = nanotiming(this._name + '.createElement')
-  const el = this.createElement.apply(this, args)
-  createElementTiming()
-  if (!this._rootNodeName) this._rootNodeName = el.nodeName
-  assert(el instanceof window.Element, 'nanocomponent: createElement should return a single DOM node')
-  assert(this._rootNodeName === el.nodeName, 'nanocomponent: root node types cannot differ between re-renders')
-  this._arguments = args
-  return this._brandNode(this._ensureID(el))
-}
-
-Nanocomponent.prototype._createProxy = function () {
-  const proxy = document.createElement(this._rootNodeName)
-  const self = this
-  this._brandNode(proxy)
-  proxy.id = this._id
-  proxy.setAttribute('data-proxy', '')
-  proxy.isSameNode = function (el) {
-    return (el && el.dataset.nanocomponent === self._ncID)
-  }
-  return proxy
-}
-
-Nanocomponent.prototype._reset = function () {
-  this._ncID = Nanocomponent.makeID()
-  this._olID = null
-  this._id = null
-  this._proxy = null
-  this._rootNodeName = null
-}
-
-Nanocomponent.prototype._brandNode = function (node) {
-  node.setAttribute('data-nanocomponent', this._ncID)
-  if (this._olID) node.setAttribute(OL_ATTR_ID, this._olID)
-  return node
-}
-
-Nanocomponent.prototype._ensureID = function (node) {
-  if (node.id) this._id = node.id
-  else node.id = this._id = this._ncID
-  // Update proxy node ID if it changed
-  if (this._proxy && this._proxy.id !== this._id) this._proxy.id = this._id
-  return node
-}
-
-Nanocomponent.prototype._handleLoad = function (el) {
-  if (this._loaded) {
-    if (this.afterreorder) this.afterreorder(el)
-    return // Debounce child-reorders
-  }
-  this._loaded = true
-  if (this.load) this.load(el)
-}
-
-Nanocomponent.prototype._handleUnload = function (el) {
-  if (this.element) return // Debounce child-reorders
-  this._loaded = false
-  if (this.unload) this.unload(el)
-}
-
-Nanocomponent.prototype.createElement = function () {
-  throw new Error('nanocomponent: createElement should be implemented!')
-}
-
-Nanocomponent.prototype.update = function () {
-  throw new Error('nanocomponent: update should be implemented!')
-}
-
-},{"assert":40,"global/document":30,"nanomorph":50,"nanotiming":59,"on-load":62}],40:[function(require,module,exports){
-module.exports = assert
-
-class AssertionError extends Error {}
-AssertionError.prototype.name = 'AssertionError'
-
-/**
- * Minimal assert function
- * @param  {any} t Value to check if falsy
- * @param  {string=} m Optional assertion error message
- * @throws {AssertionError}
- */
-function assert (t, m) {
-  if (!t) {
-    var err = new AssertionError(m)
-    if (Error.captureStackTrace) Error.captureStackTrace(err, assert)
-    throw err
-  }
-}
-
-},{}],41:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 var assert = require('assert')
 
 var safeExternalLink = /(noopener|noreferrer) (noopener|noreferrer)/
@@ -6254,7 +5841,7 @@ function href (cb, root) {
   })
 }
 
-},{"assert":36}],42:[function(require,module,exports){
+},{"assert":30}],34:[function(require,module,exports){
 'use strict'
 
 var trailingNewlineRegex = /\n[\s]+$/
@@ -6388,7 +5975,7 @@ module.exports = function appendChild (el, childs) {
   }
 }
 
-},{}],43:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict'
 
 module.exports = [
@@ -6398,17 +5985,17 @@ module.exports = [
   'readonly', 'required', 'reversed', 'selected'
 ]
 
-},{}],44:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 module.exports = require('./dom')(document)
 
-},{"./dom":46}],45:[function(require,module,exports){
+},{"./dom":38}],37:[function(require,module,exports){
 'use strict'
 
 module.exports = [
   'indeterminate'
 ]
 
-},{}],46:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 'use strict'
 
 var hyperx = require('hyperx')
@@ -6526,7 +6113,7 @@ module.exports = function (document) {
   return exports
 }
 
-},{"./append-child":42,"./bool-props":43,"./direct-props":45,"./svg-tags":47,"hyperx":33}],47:[function(require,module,exports){
+},{"./append-child":34,"./bool-props":35,"./direct-props":37,"./svg-tags":39,"hyperx":27}],39:[function(require,module,exports){
 'use strict'
 
 module.exports = [
@@ -6546,7 +6133,7 @@ module.exports = [
   'tspan', 'use', 'view', 'vkern'
 ]
 
-},{}],48:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 var assert = require('assert')
 
 var emojis = {
@@ -6711,7 +6298,7 @@ function pad (str) {
   return str.length !== 2 ? 0 + str : str
 }
 
-},{"assert":6}],49:[function(require,module,exports){
+},{"assert":4}],41:[function(require,module,exports){
 module.exports = LRU
 
 function LRU (opts) {
@@ -6849,7 +6436,7 @@ LRU.prototype.evict = function () {
   this.remove(this.tail)
 }
 
-},{}],50:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 var assert = require('nanoassert')
 var morph = require('./lib/morph')
 
@@ -7014,7 +6601,7 @@ function same (a, b) {
   return false
 }
 
-},{"./lib/morph":52,"nanoassert":36}],51:[function(require,module,exports){
+},{"./lib/morph":44,"nanoassert":30}],43:[function(require,module,exports){
 module.exports = [
   // attribute events (can be set with attributes)
   'onclick',
@@ -7061,7 +6648,7 @@ module.exports = [
   'onfocusout'
 ]
 
-},{}],52:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 var events = require('./events')
 var eventsLength = events.length
 
@@ -7236,7 +6823,7 @@ function updateAttribute (newNode, oldNode, name) {
   }
 }
 
-},{"./events":51}],53:[function(require,module,exports){
+},{"./events":43}],45:[function(require,module,exports){
 var reg = /([^?=&]+)(=([^&]*))?/g
 var assert = require('assert')
 
@@ -7260,7 +6847,7 @@ function qs (url) {
   return obj
 }
 
-},{"assert":36}],54:[function(require,module,exports){
+},{"assert":30}],46:[function(require,module,exports){
 'use strict'
 
 var assert = require('assert')
@@ -7297,7 +6884,7 @@ function nanoraf (render, raf) {
   }
 }
 
-},{"assert":36}],55:[function(require,module,exports){
+},{"assert":30}],47:[function(require,module,exports){
 var assert = require('assert')
 var wayfarer = require('wayfarer')
 
@@ -7353,7 +6940,7 @@ function pathname (routename, isElectron) {
   return decodeURI(routename.replace(suffix, '').replace(normalize, '/'))
 }
 
-},{"assert":36,"wayfarer":72}],56:[function(require,module,exports){
+},{"assert":30,"wayfarer":61}],48:[function(require,module,exports){
 var assert = require('assert')
 
 var hasWindow = typeof window !== 'undefined'
@@ -7410,115 +6997,7 @@ NanoScheduler.prototype.setTimeout = function (cb) {
 
 module.exports = createScheduler
 
-},{"assert":36}],57:[function(require,module,exports){
-var Nanobus = require('nanobus')
-var assert = require('assert')
-var Parallelstate = require('./parallel-state')
-
-module.exports = Nanostate
-
-function Nanostate (initialState, transitions) {
-  if (!(this instanceof Nanostate)) return new Nanostate(initialState, transitions)
-  assert.equal(typeof initialState, 'string', 'nanostate: initialState should be type string')
-  assert.equal(typeof transitions, 'object', 'nanostate: transitions should be type object')
-
-  this.transitions = transitions
-  this.state = initialState
-  this.submachines = {}
-  this._submachine = null
-
-  Nanobus.call(this)
-}
-
-Nanostate.prototype = Object.create(Nanobus.prototype)
-
-Nanostate.prototype.constructor = Nanostate
-
-Nanostate.prototype.emit = function (eventName) {
-  var nextState = this._next(eventName)
-  assert.ok(nextState, `nanostate.emit: invalid transition ${this.state} -> ${eventName}`)
-
-  if (this._submachine && Object.keys(this.transitions).indexOf(nextState) !== -1) {
-    this._unregister()
-  }
-
-  this.state = nextState
-  Nanobus.prototype.emit.call(this, nextState)
-}
-
-Nanostate.prototype.event = function (eventName, machine) {
-  this.submachines[eventName] = machine
-}
-
-Nanostate.parallel = function (transitions) {
-  return new Parallelstate(transitions)
-}
-
-Nanostate.prototype._unregister = function () {
-  if (this._submachine) {
-    this._submachine._unregister()
-    this._submachine = null
-  }
-}
-
-Nanostate.prototype._next = function (eventName) {
-  if (this._submachine) {
-    var nextState = this._submachine._next(eventName)
-    if (nextState) {
-      return nextState
-    }
-  }
-
-  var submachine = this.submachines[eventName]
-  if (submachine) {
-    this._submachine = submachine
-    return submachine.state
-  }
-
-  return this.transitions[this.state][eventName]
-}
-
-},{"./parallel-state":58,"assert":36,"nanobus":37}],58:[function(require,module,exports){
-var Nanobus = require('nanobus')
-var assert = require('assert')
-
-module.exports = Parallelstate
-
-function Parallelstate (transitions) {
-  assert.equal(typeof transitions, 'object', 'nanostate: transitions should be type object')
-
-  this.scopes = Object.keys(transitions)
-  this.transitions = transitions
-
-  Object.defineProperty(this, 'state', {
-    get: function () {
-      return this.scopes.reduce(function (state, scope) {
-        state[scope] = transitions[scope].state
-        return state
-      }, {})
-    }
-  })
-
-  Nanobus.call(this)
-}
-
-Parallelstate.prototype = Object.create(Nanobus.prototype)
-
-Parallelstate.prototype.emit = function (eventName) {
-  var hasColon = eventName.indexOf(':') >= 0
-  assert.ok(hasColon, `nanostate.emit: invalid transition ${this.state} -> ${eventName}. For parallel nanostate eventName must have a colon ":"`)
-
-  var eventNameSplitted = eventName.split(':')
-  var scope = eventNameSplitted[0]
-  var event = eventNameSplitted[1]
-  assert.ok(scope, `nanostate.emit: invalid scope ${scope} for parallel emitting`)
-
-  this.transitions[scope].emit(event)
-
-  Nanobus.prototype.emit.call(this, eventName)
-}
-
-},{"assert":36,"nanobus":37}],59:[function(require,module,exports){
+},{"assert":30}],49:[function(require,module,exports){
 var scheduler = require('nanoscheduler')()
 var assert = require('assert')
 
@@ -7568,7 +7047,7 @@ function noop (cb) {
   }
 }
 
-},{"assert":36,"nanoscheduler":56}],60:[function(require,module,exports){
+},{"assert":30,"nanoscheduler":48}],50:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -7660,7 +7139,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],61:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 var assert = require('assert')
 
 module.exports = objectChangeCallsite
@@ -7697,104 +7176,7 @@ function strip (str) {
   return '\n' + arr.join('\n')
 }
 
-},{"assert":6}],62:[function(require,module,exports){
-/* global MutationObserver */
-var document = require('global/document')
-var window = require('global/window')
-var watch = Object.create(null)
-var KEY_ID = 'onloadid' + Math.random().toString(36).slice(2)
-var KEY_ATTR = 'data-' + KEY_ID
-var INDEX = 0
-
-if (window && window.MutationObserver) {
-  var observer = new MutationObserver(function (mutations) {
-    if (Object.keys(watch).length < 1) return
-    for (var i = 0; i < mutations.length; i++) {
-      if (mutations[i].attributeName === KEY_ATTR) {
-        eachAttr(mutations[i], turnon, turnoff)
-        continue
-      }
-      eachMutation(mutations[i].removedNodes, function (index, el) {
-        if (!document.documentElement.contains(el)) turnoff(index, el)
-      })
-      eachMutation(mutations[i].addedNodes, function (index, el) {
-        if (document.documentElement.contains(el)) turnon(index, el)
-      })
-    }
-  })
-
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeOldValue: true,
-    attributeFilter: [KEY_ATTR]
-  })
-}
-
-module.exports = function onload (el, on, off, caller) {
-  on = on || function () {}
-  off = off || function () {}
-  el.setAttribute(KEY_ATTR, 'o' + INDEX)
-  watch['o' + INDEX] = [on, off, 0, caller || onload.caller]
-  INDEX += 1
-  return el
-}
-
-module.exports.KEY_ATTR = KEY_ATTR
-module.exports.KEY_ID = KEY_ID
-
-function turnon (index, el) {
-  if (watch[index][0] && watch[index][2] === 0) {
-    watch[index][0](el)
-    watch[index][2] = 1
-  }
-}
-
-function turnoff (index, el) {
-  if (watch[index][1] && watch[index][2] === 1) {
-    watch[index][1](el)
-    watch[index][2] = 0
-  }
-}
-
-function eachAttr (mutation, on, off) {
-  var newValue = mutation.target.getAttribute(KEY_ATTR)
-  if (sameOrigin(mutation.oldValue, newValue)) {
-    watch[newValue] = watch[mutation.oldValue]
-    return
-  }
-  if (watch[mutation.oldValue]) {
-    off(mutation.oldValue, mutation.target)
-  }
-  if (watch[newValue]) {
-    on(newValue, mutation.target)
-  }
-}
-
-function sameOrigin (oldValue, newValue) {
-  if (!oldValue || !newValue) return false
-  return watch[oldValue][3] === watch[newValue][3]
-}
-
-function eachMutation (nodes, fn) {
-  var keys = Object.keys(watch)
-  for (var i = 0; i < nodes.length; i++) {
-    if (nodes[i] && nodes[i].getAttribute && nodes[i].getAttribute(KEY_ATTR)) {
-      var onloadid = nodes[i].getAttribute(KEY_ATTR)
-      keys.forEach(function (k) {
-        if (onloadid === k) {
-          fn(k, nodes[i])
-        }
-      })
-    }
-    if (nodes[i] && nodes[i].childNodes.length > 0) {
-      eachMutation(nodes[i].childNodes, fn)
-    }
-  }
-}
-
-},{"global/document":30,"global/window":31}],63:[function(require,module,exports){
+},{"assert":4}],52:[function(require,module,exports){
 var scheduler = require('nanoscheduler')()
 var assert = require('assert')
 
@@ -7854,7 +7236,7 @@ function onPerformance (cb) {
   }
 }
 
-},{"assert":36,"nanoscheduler":56}],64:[function(require,module,exports){
+},{"assert":30,"nanoscheduler":48}],53:[function(require,module,exports){
 module.exports = plucker
 
 function plucker(path, object) {
@@ -7891,7 +7273,7 @@ function pluck(path) {
   }
 }
 
-},{}],65:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 module.exports = prettierBytes
 
 function prettierBytes (num) {
@@ -7923,7 +7305,7 @@ function prettierBytes (num) {
   }
 }
 
-},{}],66:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -8109,7 +7491,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],67:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8140,7 +7522,7 @@ function removeItems (arr, startIdx, removeCount) {
 
 module.exports = removeItems;
 
-},{}],68:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 module.exports = scrollToAnchor
 
 function scrollToAnchor (anchor, options) {
@@ -8152,10 +7534,10 @@ function scrollToAnchor (anchor, options) {
   }
 }
 
-},{}],69:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 module.exports = require('insert-css')
 
-},{"insert-css":35}],70:[function(require,module,exports){
+},{"insert-css":29}],59:[function(require,module,exports){
 var fastSafeStringify = require('fast-safe-stringify')
 var copy = require('clipboard-copy')
 
@@ -8172,7 +7554,7 @@ function stateCopy (obj) {
 
 module.exports = stateCopy
 
-},{"clipboard-copy":25,"fast-safe-stringify":29}],71:[function(require,module,exports){
+},{"clipboard-copy":21,"fast-safe-stringify":25}],60:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var assert = require('assert')
 
@@ -8210,7 +7592,7 @@ function getAllRoutes (router) {
   return transform(tree)
 }
 
-},{"assert":36}],72:[function(require,module,exports){
+},{"assert":30}],61:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var assert = require('assert')
 var trie = require('./trie')
@@ -8285,7 +7667,7 @@ function Wayfarer (dft) {
   }
 }
 
-},{"./trie":73,"assert":36}],73:[function(require,module,exports){
+},{"./trie":62,"assert":30}],62:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var assert = require('assert')
 
@@ -8426,14 +7808,4 @@ function has (object, property) {
   return Object.prototype.hasOwnProperty.call(object, property)
 }
 
-},{"assert":36}],74:[function(require,module,exports){
-'use strict';
-
-module.exports = function () {
-  throw new Error(
-    'ws does not work in the browser. Browser clients must use the native ' +
-      'WebSocket object'
-  );
-};
-
-},{}]},{},[4]);
+},{"assert":30}]},{},[2]);
