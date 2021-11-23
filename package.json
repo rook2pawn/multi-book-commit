@@ -15,9 +15,11 @@
     "watchify": "^4.0.0"
   },
   "scripts": {
-    "start-secure": "http-server --ssl --cert cert.pem --key key.pem  ./web -o -c-1 -p 443 --proxy http://localhost:443?",
-    "start-production": "http-server ./web -o -c-1 -p 80 --proxy http://localhost:80?",
-    "start": "http-server ./web -o -c-1 -p 8081 --proxy http://localhost:8081?",
+    "start-spa": "http-server ./web -c-1 -p 5050 --proxy http://localhost:5050?",
+    "start-proxy-secure": "node proxy-secure.js",
+    "start-proxy": "node proxy.js -p 8080",
+    "start-backend": "node server.js -p 5150 --unhandled-rejections=strict",
+    "start-dev": "http-server ./web -o -c-1 -p 8081 --proxy http://localhost:8081?",
     "watch": "watchify -v -g sheetify ./app/index.js -o ./web/bundle.js",
     "build": "browserify -v -g sheetify ./app/index.js -o ./web/bundle.js"
   },
