@@ -1,5 +1,9 @@
 # choo-app-starter
 
+# diagram
+
+![proxy diagram](/proxydiagram.png)
+
 # setup (dev)
 
 Run the following in separate terminals
