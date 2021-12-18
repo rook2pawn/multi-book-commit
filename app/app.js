@@ -14,7 +14,7 @@ module.exports = () => {
   });
   function mainView(state, emit) {
     return html`<body>
-      <div></div>
+      <div><h4>Choo App Starter</h4></div>
     </body>`;
   }
   app.route("/", mainView);
