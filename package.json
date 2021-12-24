@@ -8,7 +8,7 @@
     "choo": "^7.1.0",
     "choo-devtools": "^3.0.4",
     "cookie-parser": "^1.4.6",
-    "http-server": "^13.0.1",
+    "http-server": "^14.0.0",
     "nanocomponent": "^6.6.0",
     "nanohtml": "^1.9.1",
     "nanostate": "^1.2.1",
@@ -18,7 +18,7 @@
     "watchify": "^4.0.0"
   },
   "scripts": {
-    "start-spa": "http-server ./web -c-1 -p 5050 --proxy http://localhost:5050?",
+    "start-spa": "http-server ./web -c-1 -p 5050 --proxy http://127.0.0.1:5050?",
     "start-proxy-secure": "node proxy-secure.js",
     "start-proxy": "node proxy.js -p 8080",
     "start-backend": "node server.js -p 5150 --unhandled-rejections=strict",

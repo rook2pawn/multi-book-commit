@@ -2,7 +2,7 @@ const argv = require("minimist")(process.argv.slice(2));
 const port = argv.p;
 
 const API_BE = "http://127.0.0.1:5150";
-const SPA_FE = "http://localhost:5050";
+const SPA_FE = "http://127.0.0.1:5050";
 
 const http = require("http"),
   httpProxy = require("http-proxy");
@@ -18,7 +18,7 @@ const server = http.createServer(function (req, res) {
 });
 
 server.listen(port, () => {
-  console.log(`Proxy listening on ${port}. Click http://localhost:${port}`);
+  console.log(`Proxy listening on ${port}. Click http://127.0.0.1:${port}`);
   console.log(`Routing /api to ${API_BE}`);
   console.log(`Routing everything else to SPA server on ${SPA_FE}`);
 });

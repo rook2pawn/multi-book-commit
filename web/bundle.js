@@ -1,8 +1,7 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const choo = require("choo");
-const html = require("nanohtml");
 const devtools = require("choo-devtools");
-
+const { aboutView, mainView } = require("../views");
 const css = 0;
 ;((require('sheetify/insert')(".column {\n  display: flex;\n  flex-direction: column;\n  width: 800px;\n}") || true) && "_0e28dbe9");
 
@@ -13,35 +12,16 @@ module.exports = () => {
   app.use((state) => {
     state.logger = false;
   });
-  function mainView(state, emit) {
-    return html`<body>
-      <div>
-        <h4>Choo App Starter</h4>
-        <ul>
-          <li><a href="/">Home</a></li>
-          <li><a href="/about">About</a></li>
-        </ul>
-      </div>
-    </body>`;
-  }
-  function aboutView(state, emit) {
-    return html`<body>
-      <div>
-        <h4>About Page</h4>
-        <ul>
-          <li><a href="/">Home</a></li>
-          <li><a href="/about">About</a></li>
-        </ul>
-      </div>
-    </body>`;
-  }
   app.route("/", mainView);
   app.route("/about", aboutView);
+  app.route("/about/foo", aboutView);
+
   app.use((state, emitter) => {});
+
   app.mount("body");
 };
 
-},{"choo":20,"choo-devtools":10,"nanohtml":36,"sheetify/insert":58}],2:[function(require,module,exports){
+},{"../views":63,"choo":20,"choo-devtools":10,"sheetify/insert":58}],2:[function(require,module,exports){
 const lib = require("./lib");
 const app = require("./app");
 
@@ -7826,4 +7806,33 @@ function has (object, property) {
   return Object.prototype.hasOwnProperty.call(object, property)
 }
 
-},{"assert":30}]},{},[2]);
+},{"assert":30}],63:[function(require,module,exports){
+const html = require("nanohtml");
+
+function mainView(state, emit) {
+  return html`<body>
+    <div>
+      <h4>Choo App Starter</h4>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+      </ul>
+    </div>
+  </body>`;
+}
+function aboutView(state, emit) {
+  return html`<body>
+    <div>
+      <h4>About Page</h4>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+      </ul>
+    </div>
+  </body>`;
+}
+
+exports.mainView = mainView;
+exports.aboutView = aboutView;
+
+},{"nanohtml":36}]},{},[2]);
