@@ -5,7 +5,7 @@ const http = require("http");
 const router = require("router-middleware");
 const cookieParser = require("cookie-parser");
 
-const { CORS, parseJwt } = require("./serverLibrary");
+const { CORS, parseJwt } = require("./server/lib");
 const { v4 } = require("uuid");
 
 const app = router();
