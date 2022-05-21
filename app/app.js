@@ -1,7 +1,8 @@
 const choo = require("choo");
 const devtools = require("choo-devtools");
-const { aboutView, mainView } = require("../views");
 const css = require("sheetify");
+const { mainView } = require("../views");
+
 css("./app.css");
 
 module.exports = () => {
@@ -12,8 +13,6 @@ module.exports = () => {
     state.logger = false;
   });
   app.route("/", mainView);
-  app.route("/about", aboutView);
-  app.route("/about/foo", aboutView);
 
   app.use((state, emitter) => {});
 

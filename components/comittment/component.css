@@ -1,0 +1,14 @@
+div.none {
+    background:white;
+}
+div.partial {
+    background:pink;
+}
+div.committed { 
+    background: rgb(120, 199, 120);
+}
+div.commit {
+    width:200px;
+    border:thin solid black;
+    padding:10px;
+}

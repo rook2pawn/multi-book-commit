@@ -4,7 +4,7 @@ const css = require("sheetify");
 css("./component.css");
 
 class Component extends Nanocomponent {
-  constructor(machine) {
+  constructor({ fsm: machine, render }) {
     super();
     this._loadedResolve;
     this.loaded = new Promise((resolve, reject) => {
@@ -12,10 +12,12 @@ class Component extends Nanocomponent {
     });
     this.substate = "";
     this.fsm = machine.fsm ? machine.fsm : machine;
+    this.parentrender = render;
   }
   renderFSM(fsm) {
     const { state } = fsm;
     const { substate } = this;
+
     if (substate.length) {
       fsm = fsm.submachines[substate];
     }
@@ -23,6 +25,16 @@ class Component extends Nanocomponent {
       ? Object.keys(fsm.transitions[state])
       : [];
     let subControls = Object.keys(fsm.submachines);
+    console.log(
+      "RenderFSM: state:",
+      state,
+      " substate:",
+      substate,
+      "regularControls:",
+      regularControls,
+      " subControls:",
+      subControls
+    );
     return html` <div class="fsmControls">
       <div>
         ${regularControls.length
@@ -39,7 +51,7 @@ class Component extends Nanocomponent {
               } else {
                 fsm.emit(controlName);
               }
-              this.emit("render");
+              this.parentrender();
             }}
           />`;
         })}
@@ -55,7 +67,7 @@ class Component extends Nanocomponent {
             onclick=${() => {
               this.substate = controlName;
               this.fsm.emit(controlName);
-              this.emit("render");
+              this.parentrender();
             }}
           />`;
         })}

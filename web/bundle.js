@@ -1,8 +1,9 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const choo = require("choo");
 const devtools = require("choo-devtools");
-const { aboutView, mainView } = require("../views");
 const css = 0;
+const { mainView } = require("../views");
+
 ;((require('sheetify/insert')(".column {\n  display: flex;\n  flex-direction: column;\n  width: 800px;\n}") || true) && "_0e28dbe9");
 
 module.exports = () => {
@@ -13,15 +14,13 @@ module.exports = () => {
     state.logger = false;
   });
   app.route("/", mainView);
-  app.route("/about", aboutView);
-  app.route("/about/foo", aboutView);
 
   app.use((state, emitter) => {});
 
   app.mount("body");
 };
 
-},{"../views":63,"choo":20,"choo-devtools":10,"sheetify/insert":58}],2:[function(require,module,exports){
+},{"../views":76,"choo":26,"choo-devtools":15,"sheetify/insert":71}],2:[function(require,module,exports){
 const lib = require("./lib");
 const app = require("./app");
 
@@ -39,6 +38,288 @@ exports.DOMContentLoadedPromise = new Promise((resolve, reject) => {
 });
 
 },{}],4:[function(require,module,exports){
+const Nanocomponent = require("nanocomponent");
+const html = require("choo/html");
+const css = 0;
+const nanostate = require("nanostate");
+
+;((require('sheetify/insert')("div.none {\n    background:white;\n}\ndiv.partial {\n    background:pink;\n}\ndiv.committed { \n    background: rgb(120, 199, 120);\n}\ndiv.commit {\n    width:200px;\n    border:thin solid black;\n    padding:10px;\n}") || true) && "_d1f199e9");
+
+class Component extends Nanocomponent {
+  constructor() {
+    super();
+    this._loadedResolve;
+    this.loaded = new Promise((resolve, reject) => {
+      this._loadedResolve = resolve;
+    });
+    const commitmentState = nanostate("none", {
+      none: { partial: "partial", commit: "committed" },
+      partial: { uncommit: "none", commit: "committed" },
+      committed: { uncommit: "none", partial: "partial" },
+    });
+    this.fsm = commitmentState;
+  }
+
+  createElement({ state, emit }) {
+    return html`<div class="commit ${this.fsm.state}">
+      Commitment status
+      <span>${this.fsm.state}</span>
+    </div>`;
+  }
+
+  load(el) {
+    this.el = el;
+    this._loadedResolve();
+  }
+
+  update({ state, emit }) {
+    return true;
+  }
+}
+
+module.exports = exports = Component;
+
+},{"choo/html":25,"nanocomponent":41,"nanostate":59,"sheetify/insert":71}],5:[function(require,module,exports){
+const Nanocomponent = require("nanocomponent");
+const html = require("choo/html");
+const css = 0;
+const nanostate = require("nanostate");
+
+const FSMControls = require("../../fsmControls");
+const FSMRender = require("../../fsmRender");
+const Commitment = require("../comittment");
+
+;((require('sheetify/insert')("") || true) && "_d41d8cd9");
+
+class Component extends Nanocomponent {
+  constructor() {
+    super();
+    this._loadedResolve;
+    this.loaded = new Promise((resolve, reject) => {
+      this._loadedResolve = resolve;
+    });
+    this.commitment = new Commitment();
+    this.commitment_fsmRender = new FSMRender({
+      fsm: this.commitment,
+      render: () => {
+        this.rerender();
+      },
+    });
+    this.commitment_fsmControls = new FSMControls({
+      fsm: this.commitment,
+      render: () => {
+        this.rerender();
+      },
+    });
+  }
+
+  createElement({ state, emit }) {
+    return html`<div class="">
+      Card
+      <div>
+        <input
+          type="button"
+          value="click me"
+          onclick=${() => {
+            this.rerender();
+          }}
+        />
+        <input
+          type="button"
+          value="click me for whole redraw"
+          onclick=${() => {
+            emit("render");
+          }}
+        />
+      </div>
+      <div>${this.commitment.render({ state, emit })}</div>
+      <div>
+        ${this.commitment_fsmControls.render({ state, emit })}
+        ${this.commitment_fsmRender.render({ state, emit })}
+      </div>
+    </div>`;
+  }
+
+  load(el) {
+    this.el = el;
+    this._loadedResolve();
+  }
+
+  update() {
+    return false;
+  }
+}
+
+module.exports = exports = Component;
+
+},{"../../fsmControls":6,"../../fsmRender":7,"../comittment":4,"choo/html":25,"nanocomponent":41,"nanostate":59,"sheetify/insert":71}],6:[function(require,module,exports){
+const Nanocomponent = require("nanocomponent");
+const html = require("choo/html");
+const css = 0;
+;((require('sheetify/insert')("div.fsmControls {\n  font-size: 12px;\n  font-family: sans-serif;\n}\ndiv.regularControls {\n  font-weight: bold;\n}\ndiv.subControls {\n  font-weight: bold;\n}") || true) && "_217098bf");
+
+class Component extends Nanocomponent {
+  constructor({ fsm: machine, render }) {
+    super();
+    this._loadedResolve;
+    this.loaded = new Promise((resolve, reject) => {
+      this._loadedResolve = resolve;
+    });
+    this.substate = "";
+    this.fsm = machine.fsm ? machine.fsm : machine;
+    this.parentrender = render;
+  }
+  renderFSM(fsm) {
+    const { state } = fsm;
+    const { substate } = this;
+
+    if (substate.length) {
+      fsm = fsm.submachines[substate];
+    }
+    let regularControls = fsm.transitions[state]
+      ? Object.keys(fsm.transitions[state])
+      : [];
+    let subControls = Object.keys(fsm.submachines);
+    console.log(
+      "RenderFSM: state:",
+      state,
+      " substate:",
+      substate,
+      "regularControls:",
+      regularControls,
+      " subControls:",
+      subControls
+    );
+    return html` <div class="fsmControls">
+      <div>
+        ${regularControls.length
+          ? html`<div class="regularControls">Controls</div>`
+          : ""}
+        ${regularControls.map((controlName) => {
+          return html`<input
+            value="${controlName}"
+            type="button"
+            onclick=${() => {
+              if (substate.length) {
+                this.substate = "";
+                this.fsm.emit(controlName);
+              } else {
+                fsm.emit(controlName);
+              }
+              this.parentrender();
+            }}
+          />`;
+        })}
+      </div>
+      <div>
+        ${subControls.length
+          ? html`<div class="subControls">Sub Controls</div>`
+          : ""}
+        ${subControls.map((controlName) => {
+          return html`<input
+            value="${controlName}"
+            type="button"
+            onclick=${() => {
+              this.substate = controlName;
+              this.fsm.emit(controlName);
+              this.parentrender();
+            }}
+          />`;
+        })}
+      </div>
+    </div>`;
+  }
+  createElement({ state, emit }) {
+    this.emit = emit;
+    switch (typeof this.fsm.state) {
+      case "string":
+        return this.renderFSM(this.fsm);
+        break;
+      case "object":
+        const scopes = this.fsm.scopes;
+        return html`<div>
+          ${scopes.map((scope) => {
+            return this.renderFSM(this.fsm.transitions[scope]);
+          })}
+        </div>`;
+        break;
+      default:
+        break;
+    }
+  }
+
+  load(el) {
+    this.el = el;
+    this._loadedResolve();
+  }
+
+  update() {
+    return true;
+  }
+}
+
+module.exports = exports = Component;
+
+},{"choo/html":25,"nanocomponent":41,"sheetify/insert":71}],7:[function(require,module,exports){
+const Nanocomponent = require("nanocomponent");
+const html = require("choo/html");
+const css = 0;
+;((require('sheetify/insert')("div.fsmRender {\n  border: thin solid black;\n  padding: 10px;\n  font-size: 12px;\n}\ndiv.fsmRender div.currentState {\n  margin-bottom: 10px;\n  border-bottom: thin dotted #ccc;\n}\ndiv.fsmRender div.states span.active {\n  background-color: pink;\n}\ndiv.fsmRender div.states span.value {\n  word-break: break-all;\n}") || true) && "_df90261b");
+
+class Component extends Nanocomponent {
+  constructor({ fsm: machine, render }) {
+    super();
+    this._loadedResolve;
+    this.loaded = new Promise((resolve, reject) => {
+      this._loadedResolve = resolve;
+    });
+    this.fsm = machine.fsm ? machine.fsm : machine;
+    this.parentrender = render;
+  }
+  renderFSM(fsm) {
+    return html`<div class="fsmRender">
+      <div class="currentState">currentState ${fsm && fsm.state}</div>
+      <div class="states">
+        ${Object.keys(fsm.transitions).map((key) => {
+          return html`<div>
+            <span class="key ${key === fsm.state ? "active" : ""}">${key}</span
+            ><span class="value">${JSON.stringify(fsm.transitions[key])}</span>
+          </div>`;
+        })}
+      </div>
+    </div>`;
+  }
+  createElement({ state, emit }) {
+    switch (typeof this.fsm.state) {
+      case "string":
+        return this.renderFSM(this.fsm);
+        break;
+      case "object":
+        const scopes = this.fsm.scopes;
+        return html`<div>
+          ${scopes.map((scope) => {
+            return this.renderFSM(this.fsm.transitions[scope]);
+          })}
+        </div>`;
+        break;
+      default:
+        break;
+    }
+  }
+
+  load(el) {
+    this.el = el;
+    this._loadedResolve();
+  }
+
+  update() {
+    return true;
+  }
+}
+
+module.exports = exports = Component;
+
+},{"choo/html":25,"nanocomponent":41,"sheetify/insert":71}],8:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -548,7 +829,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":50,"util/":7}],5:[function(require,module,exports){
+},{"object-assign":62,"util/":11}],9:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -573,14 +854,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],6:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],7:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -1170,7 +1451,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":6,"_process":55,"inherits":5}],8:[function(require,module,exports){
+},{"./support/isBuffer":10,"_process":68,"inherits":9}],12:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -1322,7 +1603,9 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],9:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
+
+},{}],14:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -3103,7 +3386,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":8,"buffer":9,"ieee754":28}],10:[function(require,module,exports){
+},{"base64-js":12,"buffer":14,"ieee754":36}],15:[function(require,module,exports){
 var EventEmitter = require('events').EventEmitter
 
 var storage = require('./lib/storage')
@@ -3155,7 +3438,7 @@ function expose (opts) {
   }
 }
 
-},{"./lib/copy":11,"./lib/debug":12,"./lib/help":13,"./lib/log":14,"./lib/logger":15,"./lib/perf":16,"./lib/storage":17,"events":24,"wayfarer/get-all-routes":60}],11:[function(require,module,exports){
+},{"./lib/copy":16,"./lib/debug":17,"./lib/help":18,"./lib/log":19,"./lib/logger":20,"./lib/perf":21,"./lib/storage":22,"events":30,"wayfarer/get-all-routes":73}],16:[function(require,module,exports){
 var stateCopy = require('state-copy')
 var pluck = require('plucker')
 
@@ -3171,7 +3454,7 @@ function copy (state) {
   stateCopy(isStateString ? pluck.apply(this, arguments) : state)
 }
 
-},{"plucker":53,"state-copy":59}],12:[function(require,module,exports){
+},{"plucker":66,"state-copy":72}],17:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var onChange = require('object-change-callsite')
 var nanologger = require('nanologger')
@@ -3213,7 +3496,7 @@ function debug (state, emitter, app, localEmitter) {
   })
 }
 
-},{"assert":4,"nanologger":40,"object-change-callsite":51}],13:[function(require,module,exports){
+},{"assert":8,"nanologger":50,"object-change-callsite":63}],18:[function(require,module,exports){
 module.exports = help
 
 function help () {
@@ -3246,7 +3529,7 @@ function print (cmd, desc) {
 
 function noop () {}
 
-},{}],14:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 var removeItems = require('remove-array-items')
 var scheduler = require('nanoscheduler')()
 var nanologger = require('nanologger')
@@ -3324,7 +3607,7 @@ function log (state, emitter, app, localEmitter) {
 
 function noop () {}
 
-},{"clone":22,"nanologger":40,"nanoscheduler":48,"remove-array-items":56}],15:[function(require,module,exports){
+},{"clone":28,"nanologger":50,"nanoscheduler":58,"remove-array-items":69}],20:[function(require,module,exports){
 var scheduler = require('nanoscheduler')()
 var nanologger = require('nanologger')
 var Hooks = require('choo-hooks')
@@ -3409,7 +3692,7 @@ function logger (state, emitter, opts) {
   }
 }
 
-},{"choo-hooks":18,"nanologger":40,"nanoscheduler":48}],16:[function(require,module,exports){
+},{"choo-hooks":23,"nanologger":50,"nanoscheduler":58}],21:[function(require,module,exports){
 var onPerformance = require('on-performance')
 
 var BAR = '█'
@@ -3550,7 +3833,7 @@ function getMedian (args) {
 // Do nothing.
 function noop () {}
 
-},{"on-performance":52}],17:[function(require,module,exports){
+},{"on-performance":65}],22:[function(require,module,exports){
 var pretty = require('prettier-bytes')
 
 module.exports = storage
@@ -3593,7 +3876,7 @@ function fmt (num) {
 
 function noop () {}
 
-},{"prettier-bytes":54}],18:[function(require,module,exports){
+},{"prettier-bytes":67}],23:[function(require,module,exports){
 var onPerformance = require('on-performance')
 var scheduler = require('nanoscheduler')()
 var assert = require('assert')
@@ -3722,7 +4005,7 @@ ChooHooks.prototype._emitLoaded = function () {
   })
 }
 
-},{"assert":4,"nanoscheduler":48,"on-performance":52}],19:[function(require,module,exports){
+},{"assert":8,"nanoscheduler":58,"on-performance":65}],24:[function(require,module,exports){
 var assert = require('assert')
 var LRU = require('nanolru')
 
@@ -3765,7 +4048,10 @@ function newCall (Cls) {
   return new (Cls.bind.apply(Cls, arguments)) // eslint-disable-line
 }
 
-},{"assert":30,"nanolru":41}],20:[function(require,module,exports){
+},{"assert":38,"nanolru":51}],25:[function(require,module,exports){
+module.exports = require('nanohtml')
+
+},{"nanohtml":46}],26:[function(require,module,exports){
 var scrollToAnchor = require('scroll-to-anchor')
 var documentReady = require('document-ready')
 var nanotiming = require('nanotiming')
@@ -4049,7 +4335,7 @@ Choo.prototype._setCache = function (state) {
   }
 }
 
-},{"./component/cache":19,"assert":30,"document-ready":23,"nanobus":31,"nanohref":33,"nanomorph":42,"nanoquery":45,"nanoraf":46,"nanorouter":47,"nanotiming":49,"scroll-to-anchor":57}],21:[function(require,module,exports){
+},{"./component/cache":24,"assert":38,"document-ready":29,"nanobus":39,"nanohref":43,"nanomorph":52,"nanoquery":55,"nanoraf":56,"nanorouter":57,"nanotiming":61,"scroll-to-anchor":70}],27:[function(require,module,exports){
 /*! clipboard-copy. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* global DOMException */
 
@@ -4102,7 +4388,7 @@ function clipboardCopy (text) {
     : Promise.reject(new DOMException('The request is not allowed', 'NotAllowedError'))
 }
 
-},{}],22:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function (Buffer){(function (){
 var clone = (function() {
 'use strict';
@@ -4363,7 +4649,7 @@ if (typeof module === 'object' && module.exports) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":9}],23:[function(require,module,exports){
+},{"buffer":14}],29:[function(require,module,exports){
 'use strict'
 
 module.exports = ready
@@ -4382,7 +4668,7 @@ function ready (callback) {
   })
 }
 
-},{}],24:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4881,7 +5167,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
   }
 }
 
-},{}],25:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 module.exports = stringify
 stringify.default = stringify
 stringify.stable = deterministicStringify
@@ -5112,7 +5398,45 @@ function replaceGetterValues (replacer) {
   }
 }
 
-},{}],26:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
+(function (global){(function (){
+var topLevel = typeof global !== 'undefined' ? global :
+    typeof window !== 'undefined' ? window : {}
+var minDoc = require('min-document');
+
+var doccy;
+
+if (typeof document !== 'undefined') {
+    doccy = document;
+} else {
+    doccy = topLevel['__GLOBAL_DOCUMENT_CACHE@4'];
+
+    if (!doccy) {
+        doccy = topLevel['__GLOBAL_DOCUMENT_CACHE@4'] = minDoc;
+    }
+}
+
+module.exports = doccy;
+
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"min-document":13}],33:[function(require,module,exports){
+(function (global){(function (){
+var win;
+
+if (typeof window !== "undefined") {
+    win = window;
+} else if (typeof global !== "undefined") {
+    win = global;
+} else if (typeof self !== "undefined"){
+    win = self;
+} else {
+    win = {};
+}
+
+module.exports = win;
+
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],34:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -5133,7 +5457,7 @@ function attributeToProperty (h) {
   }
 }
 
-},{}],27:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 var attrToProp = require('hyperscript-attribute-to-property')
 
 var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
@@ -5430,7 +5754,7 @@ var closeRE = RegExp('^(' + [
 ].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
 function selfClosing (tag) { return closeRE.test(tag) }
 
-},{"hyperscript-attribute-to-property":26}],28:[function(require,module,exports){
+},{"hyperscript-attribute-to-property":34}],36:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -5517,7 +5841,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],29:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 var containers = []; // will store container HTMLElement references
 var styleElements = []; // will store {prepend: HTMLElement, append: HTMLElement}
 
@@ -5577,7 +5901,7 @@ function createStyleElement() {
 module.exports = insertCss;
 module.exports.insertCss = insertCss;
 
-},{}],30:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 assert.notEqual = notEqual
 assert.notOk = notOk
 assert.equal = equal
@@ -5601,7 +5925,7 @@ function assert (t, m) {
   if (!t) throw new Error(m || 'AssertionError')
 }
 
-},{}],31:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 var splice = require('remove-array-items')
 var nanotiming = require('nanotiming')
 var assert = require('assert')
@@ -5765,7 +6089,7 @@ Nanobus.prototype._emit = function (arr, eventName, data, uuid) {
   }
 }
 
-},{"assert":30,"nanotiming":49,"remove-array-items":32}],32:[function(require,module,exports){
+},{"assert":38,"nanotiming":61,"remove-array-items":40}],40:[function(require,module,exports){
 'use strict'
 
 /**
@@ -5794,7 +6118,187 @@ module.exports = function removeItems (arr, startIdx, removeCount) {
   arr.length = len
 }
 
-},{}],33:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
+const document = require('global/document')
+const nanotiming = require('nanotiming')
+const morph = require('nanomorph')
+const onload = require('on-load')
+const assert = require('assert')
+
+const OL_KEY_ID = onload.KEY_ID
+const OL_ATTR_ID = onload.KEY_ATTR
+
+module.exports = Nanocomponent
+
+function makeID () {
+  return 'ncid-' + Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
+}
+
+Nanocomponent.makeID = makeID
+
+function Nanocomponent (name) {
+  this._hasWindow = typeof window !== 'undefined'
+  this._id = null // represents the id of the root node
+  this._ncID = null // internal nanocomponent id
+  this._olID = null
+  this._proxy = null
+  this._loaded = false // Used to debounce on-load when child-reordering
+  this._rootNodeName = null
+  this._name = name || 'nanocomponent'
+  this._rerender = false
+
+  this._handleLoad = this._handleLoad.bind(this)
+  this._handleUnload = this._handleUnload.bind(this)
+
+  this._arguments = []
+
+  const self = this
+
+  Object.defineProperty(this, 'element', {
+    get: function () {
+      const el = document.getElementById(self._id)
+      if (el) return el.dataset.nanocomponent === self._ncID ? el : undefined
+    }
+  })
+}
+
+Nanocomponent.prototype.render = function () {
+  const renderTiming = nanotiming(this._name + '.render')
+  const self = this
+  const args = new Array(arguments.length)
+  let el
+
+  for (let i = 0; i < arguments.length; i++) args[i] = arguments[i]
+  if (!this._hasWindow) {
+    const createTiming = nanotiming(this._name + '.create')
+    el = this.createElement.apply(this, args)
+    createTiming()
+    renderTiming()
+    return el
+  } else if (this.element) {
+    el = this.element // retain reference, as the ID might change on render
+    const updateTiming = nanotiming(this._name + '.update')
+    const shouldUpdate = this._rerender || this.update.apply(this, args)
+    updateTiming()
+    if (this._rerender) this._rerender = false
+    if (shouldUpdate) {
+      const desiredHtml = this._handleRender(args)
+      const morphTiming = nanotiming(this._name + '.morph')
+      morph(el, desiredHtml)
+      morphTiming()
+      if (this.afterupdate) this.afterupdate(el)
+    }
+    if (!this._proxy) { this._proxy = this._createProxy() }
+    renderTiming()
+    return this._proxy
+  } else {
+    this._reset()
+    el = this._handleRender(args)
+    if (this.beforerender) this.beforerender(el)
+    if (this.load || this.unload || this.afterreorder) {
+      onload(el, self._handleLoad, self._handleUnload, self._ncID)
+      this._olID = el.dataset[OL_KEY_ID]
+    }
+    renderTiming()
+    return el
+  }
+}
+
+Nanocomponent.prototype.rerender = function () {
+  assert(this.element, 'nanocomponent: cant rerender on an unmounted dom node')
+  this._rerender = true
+  this.render.apply(this, this._arguments)
+}
+
+Nanocomponent.prototype._handleRender = function (args) {
+  const createElementTiming = nanotiming(this._name + '.createElement')
+  const el = this.createElement.apply(this, args)
+  createElementTiming()
+  if (!this._rootNodeName) this._rootNodeName = el.nodeName
+  assert(el instanceof window.Element, 'nanocomponent: createElement should return a single DOM node')
+  assert(this._rootNodeName === el.nodeName, 'nanocomponent: root node types cannot differ between re-renders')
+  this._arguments = args
+  return this._brandNode(this._ensureID(el))
+}
+
+Nanocomponent.prototype._createProxy = function () {
+  const proxy = document.createElement(this._rootNodeName)
+  const self = this
+  this._brandNode(proxy)
+  proxy.id = this._id
+  proxy.setAttribute('data-proxy', '')
+  proxy.isSameNode = function (el) {
+    return (el && el.dataset.nanocomponent === self._ncID)
+  }
+  return proxy
+}
+
+Nanocomponent.prototype._reset = function () {
+  this._ncID = Nanocomponent.makeID()
+  this._olID = null
+  this._id = null
+  this._proxy = null
+  this._rootNodeName = null
+}
+
+Nanocomponent.prototype._brandNode = function (node) {
+  node.setAttribute('data-nanocomponent', this._ncID)
+  if (this._olID) node.setAttribute(OL_ATTR_ID, this._olID)
+  return node
+}
+
+Nanocomponent.prototype._ensureID = function (node) {
+  if (node.id) this._id = node.id
+  else node.id = this._id = this._ncID
+  // Update proxy node ID if it changed
+  if (this._proxy && this._proxy.id !== this._id) this._proxy.id = this._id
+  return node
+}
+
+Nanocomponent.prototype._handleLoad = function (el) {
+  if (this._loaded) {
+    if (this.afterreorder) this.afterreorder(el)
+    return // Debounce child-reorders
+  }
+  this._loaded = true
+  if (this.load) this.load(el)
+}
+
+Nanocomponent.prototype._handleUnload = function (el) {
+  if (this.element) return // Debounce child-reorders
+  this._loaded = false
+  if (this.unload) this.unload(el)
+}
+
+Nanocomponent.prototype.createElement = function () {
+  throw new Error('nanocomponent: createElement should be implemented!')
+}
+
+Nanocomponent.prototype.update = function () {
+  throw new Error('nanocomponent: update should be implemented!')
+}
+
+},{"assert":42,"global/document":32,"nanomorph":52,"nanotiming":61,"on-load":64}],42:[function(require,module,exports){
+module.exports = assert
+
+class AssertionError extends Error {}
+AssertionError.prototype.name = 'AssertionError'
+
+/**
+ * Minimal assert function
+ * @param  {any} t Value to check if falsy
+ * @param  {string=} m Optional assertion error message
+ * @throws {AssertionError}
+ */
+function assert (t, m) {
+  if (!t) {
+    var err = new AssertionError(m)
+    if (Error.captureStackTrace) Error.captureStackTrace(err, assert)
+    throw err
+  }
+}
+
+},{}],43:[function(require,module,exports){
 var assert = require('assert')
 
 var safeExternalLink = /(noopener|noreferrer) (noopener|noreferrer)/
@@ -5839,7 +6343,7 @@ function href (cb, root) {
   })
 }
 
-},{"assert":30}],34:[function(require,module,exports){
+},{"assert":38}],44:[function(require,module,exports){
 'use strict'
 
 var trailingNewlineRegex = /\n[\s]+$/
@@ -5973,7 +6477,7 @@ module.exports = function appendChild (el, childs) {
   }
 }
 
-},{}],35:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 'use strict'
 
 module.exports = [
@@ -5983,17 +6487,17 @@ module.exports = [
   'readonly', 'required', 'reversed', 'selected'
 ]
 
-},{}],36:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 module.exports = require('./dom')(document)
 
-},{"./dom":38}],37:[function(require,module,exports){
+},{"./dom":48}],47:[function(require,module,exports){
 'use strict'
 
 module.exports = [
   'indeterminate'
 ]
 
-},{}],38:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 'use strict'
 
 var hyperx = require('hyperx')
@@ -6111,7 +6615,7 @@ module.exports = function (document) {
   return exports
 }
 
-},{"./append-child":34,"./bool-props":35,"./direct-props":37,"./svg-tags":39,"hyperx":27}],39:[function(require,module,exports){
+},{"./append-child":44,"./bool-props":45,"./direct-props":47,"./svg-tags":49,"hyperx":35}],49:[function(require,module,exports){
 'use strict'
 
 module.exports = [
@@ -6131,7 +6635,7 @@ module.exports = [
   'tspan', 'use', 'view', 'vkern'
 ]
 
-},{}],40:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 var assert = require('assert')
 
 var emojis = {
@@ -6296,7 +6800,7 @@ function pad (str) {
   return str.length !== 2 ? 0 + str : str
 }
 
-},{"assert":4}],41:[function(require,module,exports){
+},{"assert":8}],51:[function(require,module,exports){
 module.exports = LRU
 
 function LRU (opts) {
@@ -6434,7 +6938,7 @@ LRU.prototype.evict = function () {
   this.remove(this.tail)
 }
 
-},{}],42:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 var assert = require('nanoassert')
 var morph = require('./lib/morph')
 
@@ -6599,7 +7103,7 @@ function same (a, b) {
   return false
 }
 
-},{"./lib/morph":44,"nanoassert":30}],43:[function(require,module,exports){
+},{"./lib/morph":54,"nanoassert":38}],53:[function(require,module,exports){
 module.exports = [
   // attribute events (can be set with attributes)
   'onclick',
@@ -6646,7 +7150,7 @@ module.exports = [
   'onfocusout'
 ]
 
-},{}],44:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 var events = require('./events')
 var eventsLength = events.length
 
@@ -6821,7 +7325,7 @@ function updateAttribute (newNode, oldNode, name) {
   }
 }
 
-},{"./events":43}],45:[function(require,module,exports){
+},{"./events":53}],55:[function(require,module,exports){
 var reg = /([^?=&]+)(=([^&]*))?/g
 var assert = require('assert')
 
@@ -6845,7 +7349,7 @@ function qs (url) {
   return obj
 }
 
-},{"assert":30}],46:[function(require,module,exports){
+},{"assert":38}],56:[function(require,module,exports){
 'use strict'
 
 var assert = require('assert')
@@ -6882,7 +7386,7 @@ function nanoraf (render, raf) {
   }
 }
 
-},{"assert":30}],47:[function(require,module,exports){
+},{"assert":38}],57:[function(require,module,exports){
 var assert = require('assert')
 var wayfarer = require('wayfarer')
 
@@ -6938,7 +7442,7 @@ function pathname (routename, isElectron) {
   return decodeURI(routename.replace(suffix, '').replace(normalize, '/'))
 }
 
-},{"assert":30,"wayfarer":61}],48:[function(require,module,exports){
+},{"assert":38,"wayfarer":74}],58:[function(require,module,exports){
 var assert = require('assert')
 
 var hasWindow = typeof window !== 'undefined'
@@ -6995,7 +7499,115 @@ NanoScheduler.prototype.setTimeout = function (cb) {
 
 module.exports = createScheduler
 
-},{"assert":30}],49:[function(require,module,exports){
+},{"assert":38}],59:[function(require,module,exports){
+var Nanobus = require('nanobus')
+var assert = require('assert')
+var Parallelstate = require('./parallel-state')
+
+module.exports = Nanostate
+
+function Nanostate (initialState, transitions) {
+  if (!(this instanceof Nanostate)) return new Nanostate(initialState, transitions)
+  assert.equal(typeof initialState, 'string', 'nanostate: initialState should be type string')
+  assert.equal(typeof transitions, 'object', 'nanostate: transitions should be type object')
+
+  this.transitions = transitions
+  this.state = initialState
+  this.submachines = {}
+  this._submachine = null
+
+  Nanobus.call(this)
+}
+
+Nanostate.prototype = Object.create(Nanobus.prototype)
+
+Nanostate.prototype.constructor = Nanostate
+
+Nanostate.prototype.emit = function (eventName) {
+  var nextState = this._next(eventName)
+  assert.ok(nextState, `nanostate.emit: invalid transition ${this.state} -> ${eventName}`)
+
+  if (this._submachine && Object.keys(this.transitions).indexOf(nextState) !== -1) {
+    this._unregister()
+  }
+
+  this.state = nextState
+  Nanobus.prototype.emit.call(this, nextState)
+}
+
+Nanostate.prototype.event = function (eventName, machine) {
+  this.submachines[eventName] = machine
+}
+
+Nanostate.parallel = function (transitions) {
+  return new Parallelstate(transitions)
+}
+
+Nanostate.prototype._unregister = function () {
+  if (this._submachine) {
+    this._submachine._unregister()
+    this._submachine = null
+  }
+}
+
+Nanostate.prototype._next = function (eventName) {
+  if (this._submachine) {
+    var nextState = this._submachine._next(eventName)
+    if (nextState) {
+      return nextState
+    }
+  }
+
+  var submachine = this.submachines[eventName]
+  if (submachine) {
+    this._submachine = submachine
+    return submachine.state
+  }
+
+  return this.transitions[this.state][eventName]
+}
+
+},{"./parallel-state":60,"assert":38,"nanobus":39}],60:[function(require,module,exports){
+var Nanobus = require('nanobus')
+var assert = require('assert')
+
+module.exports = Parallelstate
+
+function Parallelstate (transitions) {
+  assert.equal(typeof transitions, 'object', 'nanostate: transitions should be type object')
+
+  this.scopes = Object.keys(transitions)
+  this.transitions = transitions
+
+  Object.defineProperty(this, 'state', {
+    get: function () {
+      return this.scopes.reduce(function (state, scope) {
+        state[scope] = transitions[scope].state
+        return state
+      }, {})
+    }
+  })
+
+  Nanobus.call(this)
+}
+
+Parallelstate.prototype = Object.create(Nanobus.prototype)
+
+Parallelstate.prototype.emit = function (eventName) {
+  var hasColon = eventName.indexOf(':') >= 0
+  assert.ok(hasColon, `nanostate.emit: invalid transition ${this.state} -> ${eventName}. For parallel nanostate eventName must have a colon ":"`)
+
+  var eventNameSplitted = eventName.split(':')
+  var scope = eventNameSplitted[0]
+  var event = eventNameSplitted[1]
+  assert.ok(scope, `nanostate.emit: invalid scope ${scope} for parallel emitting`)
+
+  this.transitions[scope].emit(event)
+
+  Nanobus.prototype.emit.call(this, eventName)
+}
+
+},{"assert":38,"nanobus":39}],61:[function(require,module,exports){
 var scheduler = require('nanoscheduler')()
 var assert = require('assert')
 
@@ -7045,7 +7657,7 @@ function noop (cb) {
   }
 }
 
-},{"assert":30,"nanoscheduler":48}],50:[function(require,module,exports){
+},{"assert":38,"nanoscheduler":58}],62:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -7137,7 +7749,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],51:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 var assert = require('assert')
 
 module.exports = objectChangeCallsite
@@ -7174,7 +7786,104 @@ function strip (str) {
   return '\n' + arr.join('\n')
 }
 
-},{"assert":4}],52:[function(require,module,exports){
+},{"assert":8}],64:[function(require,module,exports){
+/* global MutationObserver */
+var document = require('global/document')
+var window = require('global/window')
+var watch = Object.create(null)
+var KEY_ID = 'onloadid' + Math.random().toString(36).slice(2)
+var KEY_ATTR = 'data-' + KEY_ID
+var INDEX = 0
+
+if (window && window.MutationObserver) {
+  var observer = new MutationObserver(function (mutations) {
+    if (Object.keys(watch).length < 1) return
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].attributeName === KEY_ATTR) {
+        eachAttr(mutations[i], turnon, turnoff)
+        continue
+      }
+      eachMutation(mutations[i].removedNodes, function (index, el) {
+        if (!document.documentElement.contains(el)) turnoff(index, el)
+      })
+      eachMutation(mutations[i].addedNodes, function (index, el) {
+        if (document.documentElement.contains(el)) turnon(index, el)
+      })
+    }
+  })
+
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeOldValue: true,
+    attributeFilter: [KEY_ATTR]
+  })
+}
+
+module.exports = function onload (el, on, off, caller) {
+  on = on || function () {}
+  off = off || function () {}
+  el.setAttribute(KEY_ATTR, 'o' + INDEX)
+  watch['o' + INDEX] = [on, off, 0, caller || onload.caller]
+  INDEX += 1
+  return el
+}
+
+module.exports.KEY_ATTR = KEY_ATTR
+module.exports.KEY_ID = KEY_ID
+
+function turnon (index, el) {
+  if (watch[index][0] && watch[index][2] === 0) {
+    watch[index][0](el)
+    watch[index][2] = 1
+  }
+}
+
+function turnoff (index, el) {
+  if (watch[index][1] && watch[index][2] === 1) {
+    watch[index][1](el)
+    watch[index][2] = 0
+  }
+}
+
+function eachAttr (mutation, on, off) {
+  var newValue = mutation.target.getAttribute(KEY_ATTR)
+  if (sameOrigin(mutation.oldValue, newValue)) {
+    watch[newValue] = watch[mutation.oldValue]
+    return
+  }
+  if (watch[mutation.oldValue]) {
+    off(mutation.oldValue, mutation.target)
+  }
+  if (watch[newValue]) {
+    on(newValue, mutation.target)
+  }
+}
+
+function sameOrigin (oldValue, newValue) {
+  if (!oldValue || !newValue) return false
+  return watch[oldValue][3] === watch[newValue][3]
+}
+
+function eachMutation (nodes, fn) {
+  var keys = Object.keys(watch)
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i] && nodes[i].getAttribute && nodes[i].getAttribute(KEY_ATTR)) {
+      var onloadid = nodes[i].getAttribute(KEY_ATTR)
+      keys.forEach(function (k) {
+        if (onloadid === k) {
+          fn(k, nodes[i])
+        }
+      })
+    }
+    if (nodes[i] && nodes[i].childNodes.length > 0) {
+      eachMutation(nodes[i].childNodes, fn)
+    }
+  }
+}
+
+},{"global/document":32,"global/window":33}],65:[function(require,module,exports){
 var scheduler = require('nanoscheduler')()
 var assert = require('assert')
 
@@ -7234,7 +7943,7 @@ function onPerformance (cb) {
   }
 }
 
-},{"assert":30,"nanoscheduler":48}],53:[function(require,module,exports){
+},{"assert":38,"nanoscheduler":58}],66:[function(require,module,exports){
 module.exports = plucker
 
 function plucker(path, object) {
@@ -7271,7 +7980,7 @@ function pluck(path) {
   }
 }
 
-},{}],54:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 module.exports = prettierBytes
 
 function prettierBytes (num) {
@@ -7303,7 +8012,7 @@ function prettierBytes (num) {
   }
 }
 
-},{}],55:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -7489,7 +8198,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],56:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 'use strict';
 
 /**
@@ -7520,7 +8229,7 @@ function removeItems (arr, startIdx, removeCount) {
 
 module.exports = removeItems;
 
-},{}],57:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 module.exports = scrollToAnchor
 
 function scrollToAnchor (anchor, options) {
@@ -7532,10 +8241,10 @@ function scrollToAnchor (anchor, options) {
   }
 }
 
-},{}],58:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 module.exports = require('insert-css')
 
-},{"insert-css":29}],59:[function(require,module,exports){
+},{"insert-css":37}],72:[function(require,module,exports){
 var fastSafeStringify = require('fast-safe-stringify')
 var copy = require('clipboard-copy')
 
@@ -7552,7 +8261,7 @@ function stateCopy (obj) {
 
 module.exports = stateCopy
 
-},{"clipboard-copy":21,"fast-safe-stringify":25}],60:[function(require,module,exports){
+},{"clipboard-copy":27,"fast-safe-stringify":31}],73:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var assert = require('assert')
 
@@ -7590,7 +8299,7 @@ function getAllRoutes (router) {
   return transform(tree)
 }
 
-},{"assert":30}],61:[function(require,module,exports){
+},{"assert":38}],74:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var assert = require('assert')
 var trie = require('./trie')
@@ -7665,7 +8374,7 @@ function Wayfarer (dft) {
   }
 }
 
-},{"./trie":62,"assert":30}],62:[function(require,module,exports){
+},{"./trie":75,"assert":38}],75:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var assert = require('assert')
 
@@ -7806,17 +8515,17 @@ function has (object, property) {
   return Object.prototype.hasOwnProperty.call(object, property)
 }
 
-},{"assert":30}],63:[function(require,module,exports){
+},{"assert":38}],76:[function(require,module,exports){
 const html = require("nanohtml");
+const CommitmentMgr = require("../components/comittmentManager");
 
 function mainView(state, emit) {
+  console.log("MAINVIEW!!");
+  const cMgr = new CommitmentMgr();
   return html`<body>
     <div>
-      <h4>Choo App Starter</h4>
-      <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/about">About</a></li>
-      </ul>
+      <h4>MultiBooking Lock</h4>
+      ${cMgr.render({ state, emit })}
     </div>
   </body>`;
 }
@@ -7835,4 +8544,4 @@ function aboutView(state, emit) {
 exports.mainView = mainView;
 exports.aboutView = aboutView;
 
-},{"nanohtml":36}]},{},[2]);
+},{"../components/comittmentManager":5,"nanohtml":46}]},{},[2]);
