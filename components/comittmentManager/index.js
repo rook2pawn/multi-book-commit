@@ -4,6 +4,7 @@ const css = require("sheetify");
 const nanostate = require("nanostate");
 
 const Commitment = require("../comittment");
+const Greenlight = require("../greenlight");
 
 css("./component.css");
 
@@ -14,10 +15,10 @@ class Component extends Nanocomponent {
     this.loaded = new Promise((resolve, reject) => {
       this._loadedResolve = resolve;
     });
-    this.jobCommitments = [];
+    this.jobCommitments =      [];
   }
 
-  createElement({ state, emit }) {
+  createElement({ state, emit }) { 
     console.log("commitmentManager: createElement");
     return html`<div class="">
       Card
@@ -42,6 +43,9 @@ class Component extends Nanocomponent {
         this.addJob();
         this.rerender();
       }}>
+      </div>
+      <div>
+
       </div>
       <div class="commitmentGroup">
       ${this.jobCommitments.map(({ commitment }) => {
