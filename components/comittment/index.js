@@ -3,6 +3,10 @@ const html = require("choo/html");
 const css = require("sheetify");
 const nanostate = require("nanostate");
 
+const FSMControls = require("../../fsmControls");
+const FSMRender = require("../../fsmRender");
+const cookieParser = require("cookie-parser");
+
 css("./component.css");
 
 class Component extends Nanocomponent {
@@ -18,12 +22,24 @@ class Component extends Nanocomponent {
       committed: { uncommit: "none", partial: "partial" },
     });
     this.fsm = commitmentState;
+    this.commitment_fsmRender = new FSMRender({
+      fsm: commitmentState,
+    });
+    this.commitment_fsmControls = new FSMControls({
+      fsm: commitmentState,
+      render: () => {
+        this.rerender();
+      },
+    });
   }
 
   createElement({ state, emit }) {
+    console.log("commitment: createElement", this.fsm.state);
     return html`<div class="commit ${this.fsm.state}">
       Commitment status
       <span>${this.fsm.state}</span>
+      ${this.commitment_fsmControls.render({ state, emit })}
+      ${this.commitment_fsmRender.render({ state, emit })}
     </div>`;
   }
 

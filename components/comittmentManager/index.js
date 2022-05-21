@@ -3,8 +3,6 @@ const html = require("choo/html");
 const css = require("sheetify");
 const nanostate = require("nanostate");
 
-const FSMControls = require("../../fsmControls");
-const FSMRender = require("../../fsmRender");
 const Commitment = require("../comittment");
 
 css("./component.css");
@@ -20,6 +18,7 @@ class Component extends Nanocomponent {
   }
 
   createElement({ state, emit }) {
+    console.log("commitmentManager: createElement");
     return html`<div class="">
       Card
       <div>
@@ -54,27 +53,8 @@ class Component extends Nanocomponent {
   }
 
   addJob() {
-    /*
-                ${this.commitment_fsmControls.render({ state, emit })}
-            ${this.commitment_fsmRender.render({ state, emit })}
-
-    */
     const commitment = new Commitment();
     this.jobCommitments.push({ commitment });
-    /*
-    this.commitment_fsmRender = new FSMRender({
-      fsm: this.commitment,
-      render: () => {
-        this.rerender();
-      },
-    });
-    this.commitment_fsmControls = new FSMControls({
-      fsm: this.commitment,
-      render: () => {
-        this.rerender();
-      },
-    });
-    */
   }
   load(el) {
     this.el = el;
