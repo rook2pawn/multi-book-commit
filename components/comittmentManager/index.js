@@ -16,19 +16,7 @@ class Component extends Nanocomponent {
     this.loaded = new Promise((resolve, reject) => {
       this._loadedResolve = resolve;
     });
-    this.commitment = new Commitment();
-    this.commitment_fsmRender = new FSMRender({
-      fsm: this.commitment,
-      render: () => {
-        this.rerender();
-      },
-    });
-    this.commitment_fsmControls = new FSMControls({
-      fsm: this.commitment,
-      render: () => {
-        this.rerender();
-      },
-    });
+    this.jobCommitments = [];
   }
 
   createElement({ state, emit }) {
@@ -50,14 +38,44 @@ class Component extends Nanocomponent {
           }}
         />
       </div>
-      <div>${this.commitment.render({ state, emit })}</div>
       <div>
-        ${this.commitment_fsmControls.render({ state, emit })}
-        ${this.commitment_fsmRender.render({ state, emit })}
+      <input type='button' value='Add job' onclick=${() => {
+        this.addJob();
+        this.rerender();
+      }}>
+      </div>
+      <div class="commitmentGroup">
+      ${this.jobCommitments.map(({ commitment }) => {
+        return html`<div>${commitment.render({ state, emit })}</div> `;
+      })}
+      </div>
       </div>
     </div>`;
   }
 
+  addJob() {
+    /*
+                ${this.commitment_fsmControls.render({ state, emit })}
+            ${this.commitment_fsmRender.render({ state, emit })}
+
+    */
+    const commitment = new Commitment();
+    this.jobCommitments.push({ commitment });
+    /*
+    this.commitment_fsmRender = new FSMRender({
+      fsm: this.commitment,
+      render: () => {
+        this.rerender();
+      },
+    });
+    this.commitment_fsmControls = new FSMControls({
+      fsm: this.commitment,
+      render: () => {
+        this.rerender();
+      },
+    });
+    */
+  }
   load(el) {
     this.el = el;
     this._loadedResolve();

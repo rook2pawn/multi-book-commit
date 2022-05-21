@@ -4,14 +4,13 @@ const css = require("sheetify");
 css("./component.css");
 
 class Component extends Nanocomponent {
-  constructor({ fsm: machine, render }) {
+  constructor({ fsm: machine }) {
     super();
     this._loadedResolve;
     this.loaded = new Promise((resolve, reject) => {
       this._loadedResolve = resolve;
     });
     this.fsm = machine.fsm ? machine.fsm : machine;
-    this.parentrender = render;
   }
   renderFSM(fsm) {
     return html`<div class="fsmRender">

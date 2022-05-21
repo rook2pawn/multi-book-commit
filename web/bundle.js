@@ -89,7 +89,7 @@ const FSMControls = require("../../fsmControls");
 const FSMRender = require("../../fsmRender");
 const Commitment = require("../comittment");
 
-;((require('sheetify/insert')("") || true) && "_d41d8cd9");
+;((require('sheetify/insert')("div.commitmentGroup {\n    display:flex;\n    flex-direction: row;\n    flex-wrap: wrap;\n}") || true) && "_3e681a7d");
 
 class Component extends Nanocomponent {
   constructor() {
@@ -98,19 +98,7 @@ class Component extends Nanocomponent {
     this.loaded = new Promise((resolve, reject) => {
       this._loadedResolve = resolve;
     });
-    this.commitment = new Commitment();
-    this.commitment_fsmRender = new FSMRender({
-      fsm: this.commitment,
-      render: () => {
-        this.rerender();
-      },
-    });
-    this.commitment_fsmControls = new FSMControls({
-      fsm: this.commitment,
-      render: () => {
-        this.rerender();
-      },
-    });
+    this.jobCommitments = [];
   }
 
   createElement({ state, emit }) {
@@ -132,14 +120,44 @@ class Component extends Nanocomponent {
           }}
         />
       </div>
-      <div>${this.commitment.render({ state, emit })}</div>
       <div>
-        ${this.commitment_fsmControls.render({ state, emit })}
-        ${this.commitment_fsmRender.render({ state, emit })}
+      <input type='button' value='Add job' onclick=${() => {
+        this.addJob();
+        this.rerender();
+      }}>
+      </div>
+      <div class="commitmentGroup">
+      ${this.jobCommitments.map(({ commitment }) => {
+        return html`<div>${commitment.render({ state, emit })}</div> `;
+      })}
+      </div>
       </div>
     </div>`;
   }
 
+  addJob() {
+    /*
+                ${this.commitment_fsmControls.render({ state, emit })}
+            ${this.commitment_fsmRender.render({ state, emit })}
+
+    */
+    const commitment = new Commitment();
+    this.jobCommitments.push({ commitment });
+    /*
+    this.commitment_fsmRender = new FSMRender({
+      fsm: this.commitment,
+      render: () => {
+        this.rerender();
+      },
+    });
+    this.commitment_fsmControls = new FSMControls({
+      fsm: this.commitment,
+      render: () => {
+        this.rerender();
+      },
+    });
+    */
+  }
   load(el) {
     this.el = el;
     this._loadedResolve();
@@ -267,14 +285,13 @@ const css = 0;
 ;((require('sheetify/insert')("div.fsmRender {\n  border: thin solid black;\n  padding: 10px;\n  font-size: 12px;\n}\ndiv.fsmRender div.currentState {\n  margin-bottom: 10px;\n  border-bottom: thin dotted #ccc;\n}\ndiv.fsmRender div.states span.active {\n  background-color: pink;\n}\ndiv.fsmRender div.states span.value {\n  word-break: break-all;\n}") || true) && "_df90261b");
 
 class Component extends Nanocomponent {
-  constructor({ fsm: machine, render }) {
+  constructor({ fsm: machine }) {
     super();
     this._loadedResolve;
     this.loaded = new Promise((resolve, reject) => {
       this._loadedResolve = resolve;
     });
     this.fsm = machine.fsm ? machine.fsm : machine;
-    this.parentrender = render;
   }
   renderFSM(fsm) {
     return html`<div class="fsmRender">
