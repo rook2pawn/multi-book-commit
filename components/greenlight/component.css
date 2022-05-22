@@ -1,0 +1,35 @@
+div.greenlight {
+    display:flex;
+    height:10vh;
+    flex-direction: row;
+    justify-content:flex-start;
+    margin-top:1em;
+    margin-bottom:1em;
+    border-radius: 8px;
+    background-color:rgb(38,38,38);
+    border-color: rgb(129 129 129);
+    border-style: solid;
+    border-width: 1px;
+    padding:1em;
+}
+div.greenlight .controls {
+    display:flex;
+}
+div.greenlightState {
+    display:flex;
+    align-items: center;
+    font-size: 34px;
+    font-weight: bold;
+    justify-content: center;
+    padding-left:2em;
+    padding-right:2em;
+}
+div.greenlightState.go {
+    background-color: rgb(164, 235, 164);
+    color:black;
+}
+div.greenlightState.launched {
+    background-color: rgb(35, 179, 35);
+    color:black;
+
+}

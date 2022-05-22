@@ -11,7 +11,7 @@
     "http-server": "^14.0.0",
     "nanocomponent": "^6.6.0",
     "nanohtml": "^1.9.1",
-    "nanostate": "^1.2.1",
+    "nanostate": "rook2pawn/nanostate",
     "router-middleware": "^4.0.5",
     "sheetify": "^8.0.0",
     "uuid": "^8.3.2",

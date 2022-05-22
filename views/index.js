@@ -2,11 +2,18 @@ const html = require("nanohtml");
 const CommitmentMgr = require("../components/comittmentManager");
 
 function mainView(state, emit) {
-  console.log("MAINVIEW!!");
   const cMgr = new CommitmentMgr();
   return html`<body>
-    <div>
-      <h4>MultiBooking Lock</h4>
+    <div class="nav">
+      <div class="logo">
+        <h1>Launch Control</h1>
+      </div>
+      <div class="menu"></div>
+    </div>
+    <div class="main">
+      <div class="banner">
+        <h3>A system enabling multiple job committments</h3>
+      </div>
       ${cMgr.render({ state, emit })}
     </div>
   </body>`;

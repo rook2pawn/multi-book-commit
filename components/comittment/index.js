@@ -5,7 +5,6 @@ const nanostate = require("nanostate");
 
 const FSMControls = require("../../fsmControls");
 const FSMRender = require("../../fsmRender");
-const cookieParser = require("cookie-parser");
 
 css("./component.css");
 
@@ -19,7 +18,8 @@ class Component extends Nanocomponent {
     const commitmentState = nanostate("none", {
       none: { partial: "partial", commit: "committed" },
       partial: { uncommit: "none", commit: "committed" },
-      committed: { uncommit: "none", partial: "partial" },
+      committed: { uncommit: "none", partial: "partial", lockin: "locked" },
+      locked: {},
     });
     this.fsm = commitmentState;
     this.commitment_fsmRender = new FSMRender({

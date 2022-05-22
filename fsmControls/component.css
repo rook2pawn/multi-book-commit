@@ -1,6 +1,8 @@
 div.fsmControls {
   font-size: 12px;
   font-family: sans-serif;
+  align-items:center;
+  display:flex;
 }
 div.regularControls {
   font-weight: bold;

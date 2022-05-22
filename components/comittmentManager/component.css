@@ -1,3 +1,13 @@
+div.cMgr {
+    display:flex;
+    flex-direction: column;
+    flex-grow:1;
+}
+div.cMgr .controls {
+    display:flex;
+    height:5vh;
+    align-items: center;
+}
 div.commitmentGroup {
     display:flex;
     flex-direction: row;
