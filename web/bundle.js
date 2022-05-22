@@ -8651,6 +8651,15 @@ function mainView(state, emit) {
         <h3>A system enabling multiple job committments</h3>
       </div>
       ${cMgr.render({ state, emit })}
+      <div>
+        Each of these committments represents a driver's commitment to
+        delivering one specific leg of the load. How is this different from
+        multi-job? A job represents both the details and the actual state of the
+        job as its being performed. This here represents the pre-booking
+        committments that may or may not translate into the finalized set of
+        jobs. For instance, a given load may potentially be performed in two
+        sections but it may be booked all at once by a single driver.
+      </div>
     </div>
   </body>`;
 }
