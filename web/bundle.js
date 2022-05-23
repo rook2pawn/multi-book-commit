@@ -197,6 +197,12 @@ class Component extends Nanocomponent {
     this.fsm.guard("go", () => {
       return this.readyForLaunch();
     });
+    this.fsm.guard("launch", () => {
+      return this.jobCommitments.every(({ commitment }) => {
+        const { fsm } = commitment;
+        return fsm.state === "locked";
+      });
+    });
     this.fsm.event(
       "emergencyStop",
       nanostate("emergencyStopped", {
@@ -224,7 +230,7 @@ class Component extends Nanocomponent {
   readyForLaunch() {
     return this.jobCommitments.every(({ commitment }) => {
       const { fsm } = commitment;
-      return fsm.state === "locked";
+      return fsm.state === "committed" || fsm.state === "locked";
     });
   }
 
