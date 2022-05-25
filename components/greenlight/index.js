@@ -54,17 +54,21 @@ class Component extends Nanocomponent {
     </div>`;
   }
   readyForLaunch() {
-    return this.jobCommitments.every(({ commitment }) => {
-      const { fsm } = commitment;
-      return fsm.state === "committed" || fsm.state === "locked";
-    });
+    return (
+      this.jobCommitments.length >= 1 &&
+      this.jobCommitments.every(({ commitment }) => {
+        const { fsm } = commitment;
+        return fsm.state === "committed" || fsm.state === "locked";
+      })
+    );
   }
 
   check() {
     const isReadyForLaunch = this.readyForLaunch();
-    if (isReadyForLaunch) {
+    if (isReadyForLaunch && this.fsm.state !== "go") {
       this.fsm.emit("go");
-    } else {
+    }
+    if (!isReadyForLaunch) {
       if (this.fsm.state !== "nogo") this.fsm.emit("nogo");
     }
     this.rerender();

@@ -23,7 +23,6 @@ class Component extends Nanocomponent {
   }
 
   createElement({ state, emit }) {
-    console.log("commitmentManager: createElement");
     const canAddJob = this.greenlight.fsm.state !== "launched";
     return html`<div class="cMgr">
       <div class="controls">

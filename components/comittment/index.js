@@ -34,7 +34,6 @@ class Component extends Nanocomponent {
   }
 
   createElement({ state, emit }) {
-    console.log("commitment: createElement", this.fsm.state);
     return html`<div class="commit ${this.fsm.state}">
       Commitment status
       <span>${this.fsm.state}</span>

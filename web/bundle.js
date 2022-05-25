@@ -74,7 +74,6 @@ class Component extends Nanocomponent {
   }
 
   createElement({ state, emit }) {
-    console.log("commitment: createElement", this.fsm.state);
     return html`<div class="commit ${this.fsm.state}">
       Commitment status
       <span>${this.fsm.state}</span>
@@ -121,7 +120,6 @@ class Component extends Nanocomponent {
   }
 
   createElement({ state, emit }) {
-    console.log("commitmentManager: createElement");
     const canAddJob = this.greenlight.fsm.state !== "launched";
     return html`<div class="cMgr">
       <div class="controls">
@@ -228,17 +226,21 @@ class Component extends Nanocomponent {
     </div>`;
   }
   readyForLaunch() {
-    return this.jobCommitments.every(({ commitment }) => {
-      const { fsm } = commitment;
-      return fsm.state === "committed" || fsm.state === "locked";
-    });
+    return (
+      this.jobCommitments.length >= 1 &&
+      this.jobCommitments.every(({ commitment }) => {
+        const { fsm } = commitment;
+        return fsm.state === "committed" || fsm.state === "locked";
+      })
+    );
   }
 
   check() {
     const isReadyForLaunch = this.readyForLaunch();
-    if (isReadyForLaunch) {
+    if (isReadyForLaunch && this.fsm.state !== "go") {
       this.fsm.emit("go");
-    } else {
+    }
+    if (!isReadyForLaunch) {
       if (this.fsm.state !== "nogo") this.fsm.emit("nogo");
     }
     this.rerender();
@@ -284,16 +286,6 @@ class Component extends Nanocomponent {
       ? Object.keys(fsm.transitions[state])
       : [];
     let subControls = Object.keys(fsm.submachines);
-    console.log(
-      "RenderFSM: state:",
-      state,
-      " substate:",
-      substate,
-      "regularControls:",
-      regularControls,
-      " subControls:",
-      subControls
-    );
     return html` <div class="fsmControls">
       <div>
         ${regularControls.length

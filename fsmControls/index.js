@@ -25,16 +25,6 @@ class Component extends Nanocomponent {
       ? Object.keys(fsm.transitions[state])
       : [];
     let subControls = Object.keys(fsm.submachines);
-    console.log(
-      "RenderFSM: state:",
-      state,
-      " substate:",
-      substate,
-      "regularControls:",
-      regularControls,
-      " subControls:",
-      subControls
-    );
     return html` <div class="fsmControls">
       <div>
         ${regularControls.length
